@@ -1,0 +1,13 @@
+[Unit]
+Description=Repo Watcher Service (DCGM Exporter)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/repo-watcher/monitor.py
+Restart=always
+RestartSec=10
+WorkingDirectory=/opt/repo-watcher
+StandardOutput=journal
+StandardError=journal
+
