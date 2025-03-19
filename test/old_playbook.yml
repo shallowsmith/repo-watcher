@@ -1,0 +1,45 @@
+ # Install DCGM Exporter if not running
+    - name: Install DCGM Exporter
+      block:
+        - name: Force remove existing DCGM Exporter directory if it exists
+          ansible.builtin.file:
+            path: /tmp/dcgm-exporter
+            state: absent
+          ignore_errors: yes
+
+        - name: Clone DCGM Exporter repository (force clean clone)
+          git:
+            repo: https://github.com/NVIDIA/dcgm-exporter.git
+            dest: /tmp/dcgm-exporter
+            force: yes
+
+        - name: Build and install DCGM Exporter with GOROOT and PATH set
+          ansible.builtin.command:
+            cmd: make install
+            chdir: /tmp/dcgm-exporter
+          environment:
+            GOROOT: /usr/local/go
+            PATH: /usr/local/go/bin:/usr/local/bin:/usr/bin:/bin
+
+        - name: Create DCGM Exporter systemd service
+          ansible.builtin.copy:
+            content: |
+              [Unit]
+              Description=dcgm Exporter
+              [Service]
+              ExecStart=/usr/bin/dcgm-exporter
+              Restart=on-failure
+              RestartSec=15
+              Type=simple
+              [Install]
+              WantedBy=multi-user.target
+            dest: /etc/systemd/system/dcgm-exporter.service
+            mode: '0644'
+
+        - name: Reload systemd and start DCGM Exporter service
+          ansible.builtin.systemd:
+            daemon_reload: yes
+            name: dcgm-exporter
+            enabled: yes
+            state: started
+      when: dcgm_exporter_status.status is undefined or dcgm_exporter_status.status != "running"
