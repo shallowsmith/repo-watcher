@@ -16,7 +16,7 @@ This is a Python-based systemd watcher service that monitors an upstream GitHub 
     - Building binary (make install)
     - Packaging .deb using dpkg-deb or fpm
 - Make config file path configurable via a --config CLI argument
-- Implement version tagging for .deb files
+- Implement dynamic version tagging for .deb files
 - Log to /var/log/ instead of local repo and let systemd run it with elevated privileges
 
 3. 
