@@ -51,7 +51,7 @@ def trigger_pipeline(event_type, value):
     logging.info(f"Triggering pipeline for {event_type}: {value}")
     
     r = ansible_runner.run(
-        private_data_dir = '/opt/repo-watchter/pipeline',
+        private_data_dir = '/opt/repo-watcher/pipeline',
         playbook = 'build-and-package.yml'
     )
 
