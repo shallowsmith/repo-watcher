@@ -49,10 +49,19 @@ def check_commit():
 
 def trigger_pipeline(event_type, value):
     logging.info(f"Triggering pipeline for {event_type}: {value}")
+
+    if event_type == "release":
+        version = f"{value}-{time.strftime('%Y%m%d')}"
+    elif event_type == "commit":
+        short_sha = value[:7]
+        version = f"commit{short_sha}-{time.strftime('%Y%m%d')}"
+    else:
+        version = "unknown"
     
     r = ansible_runner.run(
         private_data_dir = '/opt/repo-watcher/pipeline',
-        playbook = 'build-and-package.yml'
+        playbook = 'build-and-package.yml',
+        envvars={"PACKAGE_VERSION": version}
     )
 
     if r.rc != 0:
