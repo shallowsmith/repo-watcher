@@ -96,8 +96,6 @@ def main():
                 state["latest_commit"] = latest_commit
                 save_state(state)
 
-            save_state(state)
-
         except Exception as e:
             logging.error(f"Error occurred: {e}")
 
