@@ -66,6 +66,12 @@
         mode: '0755'
         recurse: yes
 
+    - name: Create DEBIAN directory
+      file: 
+        path: "/tmp/{{ pkg_name }}_pkg/DEBIAN"
+        state: directory
+        mode: '0755'
+
     - name: Copy built binary to package folder
       copy:
         src: "/usr/bin/dcgm-exporter"
@@ -81,18 +87,18 @@
           Section: base
           Priority: optional
           Architecture: amd64
-          Maintainer: you@example.com
+          Maintainer: james@stninc.com
           Description: Custom-built dcgm-exporter
-
-    - name: Build .deb package
-      command: >
-        dpkg-deb --build /tmp/{{ pkg_name }}_pkg {{ pkg_output }}
 
     - name: Ensure staging dir exists
       file:
         path: "/opt/staging"
         state: directory
         mode: '0755'
+        
+    - name: Build .deb package
+      command: >
+        dpkg-deb --build /tmp/{{ pkg_name }}_pkg {{ pkg_output }}
 
     - name: Move .deb package to staging
       copy:
