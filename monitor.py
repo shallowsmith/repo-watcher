@@ -48,6 +48,8 @@ def check_commit():
     return r.json()[0]["sha"]
 
 def trigger_pipeline(event_type, value):
+    print(f"[ACTION] Trigger: {event_type} detected - {value}")
+    
     logging.info(f"Triggering pipeline for {event_type}: {value}")
 
     if event_type == "release":
@@ -69,7 +71,6 @@ def trigger_pipeline(event_type, value):
     else:
         logging.info(f"Pipeline finished successfully: {r.status}")
     
-    print(f"[ACTION] Trigger: {event_type} detected - {value}")
 
 def main():
     logging.info("Repo watcher service started.")
@@ -78,16 +79,22 @@ def main():
     while True:
         try:
             latest_release = check_release()
+            latest_commit = check_commit()
+
+            # Trigger release pipeline first
             if latest_release != state["latest_release"]:
                 logging.info(f"New release detected: {latest_release}")
                 trigger_pipeline("release", latest_release)
                 state["latest_release"] = latest_release
+                state["latest_commit"] = latest_commit
+                save_state(state)
 
-            latest_commit = check_commit()
-            if latest_commit != state["latest_commit"]:
+            # Only trigger commit pipeline if no new release is found
+            elif latest_commit != state["latest_commit"]:
                 logging.info(f"New commit detected on main: {latest_commit}")
                 trigger_pipeline("commit", latest_commit)
                 state["latest_commit"] = latest_commit
+                save_state(state)
 
             save_state(state)
 
