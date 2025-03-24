@@ -3,5 +3,5 @@
     "repo": "dcgm-exporter",
     "check_interval": 1800,
     "state_file": "/opt/repo-watcher/repo_state.json",
-    "log_file": "/var/log/repo-watcher.log"
+    "log_file": "./repo-watcher.log"
 }

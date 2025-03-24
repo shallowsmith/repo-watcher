@@ -6,8 +6,8 @@ This is a Python-based systemd watcher service that monitors an upstream GitHub 
 1. 
 - [x] Build Python script to monitor GitHub repo for new commits/releases
 - [x] Externalize configuration (config.json)
-- Integrate Ansible Runner or subprocess trigger to call automation pipeline
-- Deploy watcher service on lab VM
+- [x] Integrate Ansible Runner or subprocess trigger to call automation pipeline
+- [x] Deploy watcher service on lab VM
 - Switch to config.yaml (optional)
 
 2. 
@@ -17,6 +17,7 @@ This is a Python-based systemd watcher service that monitors an upstream GitHub 
     - Packaging .deb using dpkg-deb or fpm
 - Make config file path configurable via a --config CLI argument
 - Implement version tagging for .deb files
+- Log to /var/log/ instead of local repo and let systemd run it with elevated privileges
 
 3. 
 - Define staging directory for review
@@ -27,7 +28,7 @@ This is a Python-based systemd watcher service that monitors an upstream GitHub 
 ## Usage
 ### Requirements:
 - Python 3.x (built on Python 3.11)
-- requests module (install via `pip install requests`)
+- `pip install requirements.txt`
 
 ### Config: 
 Edit `config.json`
