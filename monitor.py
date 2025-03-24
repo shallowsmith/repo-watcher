@@ -4,7 +4,7 @@ import requests
 import json
 import os
 import time
-# import subprocess
+import ansible_runner
 import logging
 
 # Load config file
@@ -49,9 +49,18 @@ def check_commit():
 
 def trigger_pipeline(event_type, value):
     logging.info(f"Triggering pipeline for {event_type}: {value}")
-    # Placeholder automation
+    
+    r = ansible_runner.run(
+        private_data_dir = '/opt/repo-watchter/pipeline',
+        playbook = 'build-and-package.yml'
+    )
+
+    if r.rc != 0:
+        logging.error(f"Pipeline failed! Status: {r.status}, RC: {r.rc}")
+    else:
+        logging.info(f"Pipeline finished successfully: {r.status}")
+    
     print(f"[ACTION] Trigger: {event_type} detected - {value}")
-    # subprocess.run(["ansible-playbook", "/opt/repo-watcher/build-and-package.yml"])
 
 def main():
     logging.info("Repo watcher service started.")
