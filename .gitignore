@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Virtualenv
+venv/
+env/
+
+# Ansible artifacts
+*.retry
+*.ansible_runner/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temporary build files
+/tmp/
+*.deb
+
+# staging directory
+opt/staging/

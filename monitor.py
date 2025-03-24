@@ -24,7 +24,7 @@ COMMITS_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/commits?sha=main&per
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(messages)s'
+    format='%(asctime)s [%(levelname)s] %(message)s'
 )
 
 def load_state():
