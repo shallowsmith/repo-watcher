@@ -11,7 +11,7 @@ This is a Python-based systemd watcher service that monitors an upstream GitHub 
 - Switch to config.yaml (optional)
 
 2. 
-- Create or finalize Ansible playbook for:
+- [x] Create or finalize Ansible playbook for:
     - Cloning repo
     - Building binary (make install)
     - Packaging .deb using dpkg-deb or fpm
@@ -20,7 +20,7 @@ This is a Python-based systemd watcher service that monitors an upstream GitHub 
 - Log to /var/log/ instead of local repo and let systemd run it with elevated privileges
 
 3. 
-- Define staging directory for review
+- [x] Define staging directory for review
 - Add approval step before publish
 - Push .deb to APT repo, validate installation on target machines
 - Slurm (in the future)
