@@ -1,0 +1,5 @@
+{
+    "staging_dir": "/opt/staging",
+    "repo_dir": "/opt/published",
+    "log_file": "/opt/repo-watcher/log/repoctl.log"
+}
