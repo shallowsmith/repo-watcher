@@ -21,6 +21,11 @@ STAGING_DIR = cfg.get("staging_dir", "/opt/staging")
 REPO_DIR = cfg.get("repo_dir", "/opt/published")
 LOG_FILE = cfg.get("log_file", "/opt/repo-watcher/log/repoctl.log")
 
+# Ensure log directory and file exist
+log_path = Path(LOG_FILE)
+log_path.parent.mkdir(parents=True, exist_ok=True)
+log_path.touch(exist_ok=True)
+
 # Setup logging
 logging.basicConfig(
     filename=LOG_FILE,
