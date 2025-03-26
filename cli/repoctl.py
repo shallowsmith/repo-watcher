@@ -3,6 +3,7 @@ import os
 import shutil
 import logging
 import json
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -39,16 +40,35 @@ def list_package():
         if f.endswith(".deb"):
             print(f" - {f}")
 
+def view_metadata(package_name):
+    pkg_path = os.path.join(STAGING_DIR, package_name)
+    if not os.path.exists(pkg_path):
+        print(f"[ERROR] Package not found in staging: {package_name}")
+        return
+
+    try:
+        output = subprocess.check_output(["dpkg-deb", "-I", pkg_path], text=True)
+        print(f"\nMetadata for {package_name}:\n")
+        print(output)
+    except subprocess.CalledProcessError as e:
+        print(f"[ERROR] Failed to extract metadata: {e}")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="repoctl: manage staged .deb package")
     subparsers = parser.add_subparsers(dest="command")
     
-    # list
+    # Subcommands
     subparsers.add_parser("list", help="List staged .deb packages")
+    metadata_parser = subparsers.add_parser("meta", help="View metadata of a .deb file")
+    metadata_parser.add_argument("package", help="The .deb file to inspect")
+
+    # Optional flags
+    parser.add_argument("--list", "-l", action="store_true", help="List staged .deb packages")
+    parser.add_argument("--meta", "-m", metavar="PACKAGE", help="View metadata of a .deb file")
 
     args = parser.parse_args()
 
-    if args.command == "list":
+    if args.command == "list" or args.list:
         list_package()
     else:
         parser.print_help()
