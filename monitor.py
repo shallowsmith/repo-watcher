@@ -8,7 +8,7 @@ import ansible_runner
 import logging
 
 # Load config file
-with open("/opt/repo-watcher/config.json", "r") as f:
+with open("/opt/repo-watcher/monitor-config.json", "r") as f:
     config = json.load(f)
 
 OWNER = config["owner"]
