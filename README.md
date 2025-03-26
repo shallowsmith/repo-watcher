@@ -18,11 +18,11 @@ This is a Python-based systemd watcher service that monitors an upstream GitHub 
 - Make config file path configurable via a --config CLI argument
 - [x] Separate between commit and release builds
 - [x] Implement dynamic version tagging for .deb files
-- Log to /var/log/ instead of local repo and let systemd run it with elevated privileges
+- Let systemd run it with elevated privileges
 
 3. 
 - [x] Define staging directory for review
-- Add approval step before publish
+- Add approval step before publish using CLI arguments
 - Push .deb to APT repo, validate installation on target machines
 - Packag it as a proper systemd-managed service for auto-start
 - Slurm (in the future)
@@ -48,4 +48,4 @@ python3 monitor.py --config /path/to/config.json
 Designed for internal use.
 
 ## Flowchart:
-<img src="./flowchart.svg" alt="Mermaid Chart" style="max-width: 20%;">
+<img src="./public/flowchart.svg" alt="Mermaid Chart" style="max-width: 20%;">
