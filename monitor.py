@@ -90,7 +90,7 @@ def main():
                 save_state(state)
 
             # Only trigger commit pipeline if no new release is found
-            elif latest_commit != state["latest_commit"]:
+            if latest_commit != state["latest_commit"]:
                 logging.info(f"New commit detected on main: {latest_commit}")
                 trigger_pipeline("commit", latest_commit)
                 state["latest_commit"] = latest_commit
