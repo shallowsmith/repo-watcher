@@ -46,9 +46,10 @@ If a new release or commit is detected:
 
 ### Running monitor.py
 ```bash
+python3 monitor.py  # uses deafult config
+# or
 python3 monitor.py --config /path/to/config.json
 ```
-(Note: `--config` flag is to be implemented in the future)
 
 
 ## CLI Tool: repoctl.py
@@ -59,7 +60,7 @@ python3 monitor.py --config /path/to/config.json
 ```json
 {
   "staging_dir": "/opt/staging",
-  "repo_dir": "/opt/published",
+  "repo_dir": "/opt/published",  // To be changed later
   "log_file": "/opt/repo-watcher/log/repoctl.log"
 }
 ```
@@ -107,7 +108,7 @@ python3 cli/repoctl.py -p <package.deb>
 - [x] Finalize playbook to clone repo, build, and package
 - [x] Separate between commit and release builds
 - [x] Implement dynamic version tagging for `.deb` files
-- [ ] Make config path configurable via CLI flag
+- [x] Make config path configurable via CLI flag
 - [ ] Let systemd run it with elevated privileges
 
 ### Promotion Flow
