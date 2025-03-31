@@ -99,21 +99,20 @@ if __name__ == "__main__":
 
     publish_parser = subparsers.add_parser("publish", help="Publish a staged .deb package")
     publish_parser.add_argument("package", help="The .deb file to publish")
+    publish_parser.add_argument("--check", action="store_true", help="Run in check mode")
 
     # Optional flags
     parser.add_argument("--list", "-l", action="store_true", help="List staged .deb packages")
     parser.add_argument("--meta", "-m", metavar="PACKAGE", help="View metadata of a .deb file")
     parser.add_argument("--status", "-s", metavar="PACKAGE", help="Check publish status of a .deb file")
     parser.add_argument("--publish", "-p", metavar="PACKAGE", help="Publish a staged .deb package")
-    parser.add_argument("--check", "-c", action="store_true", help="Run in check mode (simulate actions without making changes)")
 
     args = parser.parse_args()
 
     if args.command == "list" or args.list:
         list_package()
     elif args.command == "publish" or args.publish:
-        pkg = args.publish if args.publish else args.package
-        publish_package(pkg, check_mode=args.check)
+        publish_package(args.package, check_mode=args.check)
     elif args.command == "status" or args.status:
         show_status(args.status if args.status else args.package)
     elif args.command == "metadata" or args.metadata:
