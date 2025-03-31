@@ -58,14 +58,19 @@ def view_metadata(package_name):
         print(f"[ERROR] Failed to extract metadata: {e}")
 
 # Publish the package onto the repo
-def publish_package(package_name):
+def publish_package(package_name, check_mode=False):
     src_path = os.path.join(STAGING_DIR, package_name)
     dest_path = os.path.join(REPO_DIR, package_name)
 
     if not os.path.exists(src_path):
         print(f"[ERROR] Package not found in staging: {package_name}")
         return
-
+    
+    if check_mode:
+        print(f"[CHECK] would publish {package_name} to {REPO_DIR}")
+        logging.info(f"[CHECK] would publish {package_name} to {REPO_DIR}")
+        return
+                     
     os.makedirs(REPO_DIR, exist_ok=True)
     shutil.copy2(src_path, dest_path)
     print(f"[OK] Published {package_name} to {REPO_DIR}")
@@ -100,13 +105,15 @@ if __name__ == "__main__":
     parser.add_argument("--meta", "-m", metavar="PACKAGE", help="View metadata of a .deb file")
     parser.add_argument("--status", "-s", metavar="PACKAGE", help="Check publish status of a .deb file")
     parser.add_argument("--publish", "-p", metavar="PACKAGE", help="Publish a staged .deb package")
+    parser.add_argument("--check", "-c", action="store_true", help="Run in check mode (simulate actions without making changes)")
 
     args = parser.parse_args()
 
     if args.command == "list" or args.list:
         list_package()
     elif args.command == "publish" or args.publish:
-        publish_package(args.publish if args.publish else args.package)
+        pkg = args.publish if args.publish else args.package
+        publish_package(pkg, check_mode=args.check)
     elif args.command == "status" or args.status:
         show_status(args.status if args.status else args.package)
     elif args.command == "metadata" or args.metadata:

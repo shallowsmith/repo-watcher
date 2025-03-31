@@ -94,6 +94,10 @@ python3 cli/repoctl.py publish <package.deb>
 # or
 python3 cli/repoctl.py -p <package.deb>
 ```
+#### Simulate promote without modifying (Dry run)
+```bash
+python3 cli/repoctl.py publish <package.deb> --check
+```
 
 ## TODO
 
@@ -102,7 +106,6 @@ python3 cli/repoctl.py -p <package.deb>
 - [x] Externalize configuration (config.json)
 - [x] Integrate Ansible Runner or subprocess trigger to call automation pipeline
 - [x] Deploy watcher service on lab VM
-- [ ] Switch to config.yaml (optional)
 
 ### Ansible Build Pipeline
 - [x] Finalize playbook to clone repo, build, and package
@@ -111,13 +114,15 @@ python3 cli/repoctl.py -p <package.deb>
 - [x] Make config path configurable via CLI flag
 - [ ] Let systemd run it with elevated privileges
 
-### Promotion Flow
+### Repo Flow
 - [x] Define staging directory for review
 - [x] Build CLI tool (repoctl.py)
 - [ ] Add approval step before publish
+- [x] Add a dry run flag to simulate actions without making changes
 - [ ] Push `.deb` to APT repo, validate on target machines
 - [ ] Package monitor.py as systemd-managed service
 - [ ] Add Slurm monitoring (future)
+- [ ] Integrate testing framework using GitHub Actions
 
 
 ## 📝 Logging
