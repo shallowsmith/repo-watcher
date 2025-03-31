@@ -36,10 +36,11 @@ logging.basicConfig(
 
 # List packages
 def list_package():
-    print("Available .deb package(s) in staging")
-    for f in os.listdir(STAGING_DIR):
-        if f.endswith(".deb"):
-            print(f" - {f}")
+    packages = [f for f in os.listdir(STAGING_DIR) if f.endswith(".deb")]
+    logging.info(f"Listed staged packages: {packages if packages else 'None'}")
+    print("Available .deb package(s) in staging:")
+    for f in packages:
+        print(f" - {f}")
 
 # View metadata of the packages
 def view_metadata(package_name):
@@ -52,6 +53,7 @@ def view_metadata(package_name):
         output = subprocess.check_output(["dpkg-deb", "-I", pkg_path], text=True)
         print(f"\nMetadata for {package_name}:\n")
         print(output)
+        logging.info(f"Viewed metadata for {package_name}")
     except subprocess.CalledProcessError as e:
         print(f"[ERROR] Failed to extract metadata: {e}")
 
@@ -76,6 +78,7 @@ def show_status(package_name):
         print(f"[INFO] Package is already published: {package_name}")
     else:
         print(f"[INFO] Package is NOT published yet: {package_name}")
+    logging.info(f"Checked status of {package_name}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="repoctl: manage staged .deb package")
