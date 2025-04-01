@@ -46,8 +46,8 @@ jobs:
 
       - name: Assert expected CLI output
         run: |
-          grep "testpkg_1.0.0.deb" cli-output.log
-          grep "[CHECK] Would publish" cli-output.log
+          grep "testpkg_1.0.0.deb" cli-output.log || (echo "Package name not listed"; exit 1)
+          grep "\[CHECK\] would publish" cli-output.log || (echo "Check-mode message not found"; exit 1)
 
       - name: Simulate monitor.py run
         run: |
