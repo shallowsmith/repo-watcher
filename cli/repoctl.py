@@ -115,7 +115,7 @@ if __name__ == "__main__":
         publish_package(args.package, check_mode=args.check)
     elif args.command == "status" or args.status:
         show_status(args.status if args.status else args.package)
-    elif args.command == "meta" or args.metadata:
-        view_metadata(args.metadata if args.metadata else args.package)
+    elif args.command == "meta" or args.meta:
+        view_metadata(args.meta if args.meta else args.package)
     else:
         parser.print_help()
