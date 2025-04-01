@@ -99,6 +99,18 @@ python3 cli/repoctl.py -p <package.deb>
 python3 cli/repoctl.py publish <package.deb> --check
 ```
 
+### Remove a package
+```bash
+# Remove from staging (default)
+python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb
+
+# Remove from published repo
+python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb --published
+
+# Simulate removal (dry-run)
+python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb --check
+```
+
 ## TODO
 
 ### Watcher & Build Automation
@@ -117,12 +129,11 @@ python3 cli/repoctl.py publish <package.deb> --check
 ### Repo Flow
 - [x] Define staging directory for review
 - [x] Build CLI tool (repoctl.py)
-- [ ] Add approval step before publish
 - [x] Add a dry run flag to simulate actions without making changes
 - [ ] Push `.deb` to APT repo, validate on target machines
 - [ ] Package monitor.py as systemd-managed service
 - [ ] Add Slurm monitoring (future)
-- [ ] Integrate testing framework using GitHub Actions
+- [x] Integrate testing framework using GitHub Actions
 
 
 ## 📝 Logging
