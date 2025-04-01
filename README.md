@@ -1,45 +1,133 @@
 # repo-watcher
 ## Overview
-This is a Python-based systemd watcher service that monitors an upstream GitHub repository for new releases and commits to the main branch. Automation pipeline will be triggered via Ansible to build, package, and deploy the binaries onto local Ubuntu repository.
+This project contains two components: `monitor.py` and `repoctl.py`, working together to monitor an upstream GitHub repository, automatically build and stage `.deb` packages, and allow for manual promotion to an internal APT repository.
+
+- `monitor.py`: A Python-based systemd-compatible watcher service that monitors an upstream GitHub repository for new releases and commits to the main branch. It triggers an Ansible pipeline to build, package, and stage the binaries.
+- `repoctl.py`: A CLI tool to review staged `.deb` packages, view metadata, check promotion status, and promote packages to the published APT repo.
+
+## Getting Started
+### Prerequisities
+- Ubuntu 20.04
+- Python 3.11+ (built on Python 3.11)
+
+### Installation
+Clone the Repo: <br/>
+`git clone https://github.com/shallowsmith/repo-watcher.git`
+
+Create, activate a virtual environment and install the required packages:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+## GitHub Watcher Service: monitor.py  
+
+`monitor.py` periodically queries the GitHub API for:
+- The latest release tag
+- The latest commit SHA on the `main` branch
+
+If a new release or commit is detected:
+- It triggers an Ansible Runner pipeline to build and stage a `.deb` package
+- Saves state in a JSON file to avoid repeated builds
+- Logs all actions and errors for traceability
+
+### Example `config.json`
+```json
+{
+  "owner": "NVIDIA",
+  "repo": "dcgm-exporter",
+  "check_interval": 1800,
+  "state_file": "/opt/repo-watcher/repo_state.json",
+  "log_file": "/opt/repo-watcher/log/monitor.log"
+}
+```
+
+### Running monitor.py
+```bash
+python3 monitor.py  # uses deafult config
+# or
+python3 monitor.py --config /path/to/config.json
+```
+
+
+## CLI Tool: repoctl.py
+
+`repoctl.py` is a lightweight CLI utility for interacting with staged `.deb` packages. It supports both subcommand-style and flag-based invocation.
+
+### Example `cli-config.json`
+```json
+{
+  "staging_dir": "/opt/staging",
+  "repo_dir": "/opt/published",  // To be changed later
+  "log_file": "/opt/repo-watcher/log/repoctl.log"
+}
+```
+
+### Commands:
+
+#### List staged packages
+```bash
+python3 cli/repoctl.py list
+# or
+python3 cli/repoctl.py --list
+```
+
+#### View package metadata
+```bash
+python3 cli/repoctl.py metadata <package.deb>
+# or
+python3 cli/repoctl.py -m <package.deb>
+```
+
+#### Check promotion status
+```bash
+python3 cli/repoctl.py status <package.deb>
+# or
+python3 cli/repoctl.py -s <package.deb>
+```
+
+#### Promote package to repo
+```bash
+python3 cli/repoctl.py publish <package.deb>
+# or
+python3 cli/repoctl.py -p <package.deb>
+```
+#### Simulate promote without modifying (Dry run)
+```bash
+python3 cli/repoctl.py publish <package.deb> --check
+```
 
 ## TODO
-1. 
+
+### Watcher & Build Automation
 - [x] Build Python script to monitor GitHub repo for new commits/releases
 - [x] Externalize configuration (config.json)
 - [x] Integrate Ansible Runner or subprocess trigger to call automation pipeline
 - [x] Deploy watcher service on lab VM
-- Switch to config.yaml (optional)
 
-2. 
-- [x] Create or finalize Ansible playbook for:
-    - Cloning repo
-    - Building binary (make install)
-    - Packaging .deb using dpkg-deb or fpm
-- Make config file path configurable via a --config CLI argument
+### Ansible Build Pipeline
+- [x] Finalize playbook to clone repo, build, and package
 - [x] Separate between commit and release builds
-- [x] Implement dynamic version tagging for .deb files
-- Log to /var/log/ instead of local repo and let systemd run it with elevated privileges
+- [x] Implement dynamic version tagging for `.deb` files
+- [x] Make config path configurable via CLI flag
+- [ ] Let systemd run it with elevated privileges
 
-3. 
+### Repo Flow
 - [x] Define staging directory for review
-- Add approval step before publish
-- Push .deb to APT repo, validate installation on target machines
-- Packag it as a proper systemd-managed service for auto-start
-- Slurm (in the future)
+- [x] Build CLI tool (repoctl.py)
+- [ ] Add approval step before publish
+- [x] Add a dry run flag to simulate actions without making changes
+- [ ] Push `.deb` to APT repo, validate on target machines
+- [ ] Package monitor.py as systemd-managed service
+- [ ] Add Slurm monitoring (future)
+- [ ] Integrate testing framework using GitHub Actions
 
-## Usage
-### Requirements:
-- Python 3.x (built on Python 3.11)
-- `pip install requirements.txt`
 
-### Config: 
-Edit `config.json`
-
-### Running: 
-```bash
-python3 monitor.py --config /path/to/config.json
-```
-(`*--config` flag will be implemented in the future)
+## 📝 Logging
+- `monitor.py`: Logs release/commit checks, errors, and pipeline triggers to `monitor.log`
+- `repoctl.py`: Logs CLI actions like listing, publishing, metadata inspection to `repoctl.log`
 
 ### Testing on local environment:
 - Navigate to /test
@@ -48,4 +136,4 @@ python3 monitor.py --config /path/to/config.json
 Designed for internal use.
 
 ## Flowchart:
-<img src="./flowchart.svg" alt="Mermaid Chart" style="max-width: 20%;">
+<img src="./public/flowchart.svg" alt="Mermaid Chart" style="max-width: 20%;">

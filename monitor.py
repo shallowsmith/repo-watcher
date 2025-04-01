@@ -6,9 +6,23 @@ import os
 import time
 import ansible_runner
 import logging
+import argparse
+
+
+DEFAULT_CONFIG_PATH = "/opt/repo-watcher/monitor-config.json"
+
+parser = argparse.ArgumentParser(description="Github repo watcher")
+parser.add_argument(
+    "--config",
+    "-c",
+    help="Path to config file",
+    deafult=DEFAULT_CONFIG_PATH
+)
+
+args = parser.parse_args()
 
 # Load config file
-with open("/opt/repo-watcher/config.json", "r") as f:
+with open(args.config) as f:
     config = json.load(f)
 
 OWNER = config["owner"]
