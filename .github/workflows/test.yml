@@ -18,7 +18,7 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-          pip install -r requirements.txt || true  # Skip if none
+          pip install -r requirements.txt 
 
       - name: Prepare test environment
         run: |
@@ -51,6 +51,7 @@ jobs:
 
       - name: Simulate monitor.py run
         run: |
+          source venv/bin/activate
           python monitor.py --config opt/repo-watcher/config.json || true
 
       - name: View repoctl log output
