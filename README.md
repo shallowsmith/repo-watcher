@@ -76,7 +76,7 @@ python3 cli/repoctl.py --list
 
 #### View package metadata
 ```bash
-python3 cli/repoctl.py metadata <package.deb>
+python3 cli/repoctl.py meta <package.deb>
 # or
 python3 cli/repoctl.py -m <package.deb>
 ```
