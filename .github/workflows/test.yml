@@ -49,6 +49,14 @@ jobs:
           grep "testpkg_1.0.0.deb" cli-output.log || (echo "Package name not listed"; exit 1)
           grep "\[CHECK\] would publish" cli-output.log || (echo "Check-mode message not found"; exit 1)
 
+      - name: Test repoctl remove (check mode)
+        run: |
+          python cli/repoctl.py remove testpkg_1.0.0.deb --check | tee remove-output.log
+
+      - name: Assert expected remove output
+        run: |
+          grep "\[CHECK\] Would remove testpkg_1.0.0.deb" remove-output.log || (echo "Check-mode remove message not found"; exit 1)
+
       - name: Simulate monitor.py run
         run: |
           source venv/bin/activate
