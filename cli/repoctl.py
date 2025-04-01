@@ -70,7 +70,13 @@ def publish_package(package_name, check_mode=False):
         print(f"[CHECK] would publish {package_name} to {REPO_DIR}")
         logging.info(f"[CHECK] would publish {package_name} to {REPO_DIR}")
         return
-                     
+    
+    confirm = input(f"Are you sure you want to publish {package_name} to the repo? (y/N): ").strip().lower()
+    if confirm != "y":
+        print("[CANCELLED] No changes made.")
+        logging.info(f"Publish cancelled for {package_name}")
+        return
+           
     os.makedirs(REPO_DIR, exist_ok=True)
     shutil.copy2(src_path, dest_path)
     print(f"[OK] Published {package_name} to {REPO_DIR}")
@@ -97,6 +103,12 @@ def remove_package(package_name, from_published=False, check_mode=False):
     if check_mode:
         print(f"[CHECK] Would remove {package_name} from {target_dir}")
         logging.info(f"[CHECK] Would remove {package_name} from {target_dir}")
+        return
+
+    confirm = input(f"Are you sure you want to delete {package_name} from {target_dir}? (y/N): ").strip().lower()
+    if confirm != "y":
+        print("[CANCELLED] No changes made.")
+        logging.info(f"Deletion cancelled for {package_name}")
         return
 
     os.remove(pkg_path)
