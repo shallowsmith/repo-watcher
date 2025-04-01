@@ -85,6 +85,24 @@ def show_status(package_name):
         print(f"[INFO] Package is NOT published yet: {package_name}")
     logging.info(f"Checked status of {package_name}")
 
+# Remove the package from staged or published dir
+def remove_package(package_name, from_published=False, check_mode=False):
+    target_dir = REPO_DIR if from_published else STAGING_DIR
+    pkg_path = os.path.join(target_dir, package_name)
+
+    if not os.path.exists(pkg_path):
+        print(f"[ERROR] Package not found in {'published' if from_published else 'staging'}: {package_name}")
+        return
+
+    if check_mode:
+        print(f"[CHECK] Would remove {package_name} from {target_dir}")
+        logging.info(f"[CHECK] Would remove {package_name} from {target_dir}")
+        return
+
+    os.remove(pkg_path)
+    print(f"[OK] Removed {package_name} from {target_dir}")
+    logging.info(f"Removed {package_name} from {target_dir}")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="repoctl: manage staged .deb package")
     subparsers = parser.add_subparsers(dest="command")
@@ -101,11 +119,19 @@ if __name__ == "__main__":
     publish_parser.add_argument("package", help="The .deb file to publish")
     publish_parser.add_argument("--check", action="store_true", help="Run in check mode")
 
+    remove_parser = subparsers.add_parser("remove", help="Remove a .deb package from staging or published")
+    remove_parser.add_argument("package", help="The .deb file to remove")
+    remove_parser.add_argument("--published", action="store_true", help="Remove from published repo instead of staging")
+    remove_parser.add_argument("--check", action="store_true", help="Simulate removal without deleting")
+
     # Optional flags
     parser.add_argument("--list", "-l", action="store_true", help="List staged .deb packages")
     parser.add_argument("--meta", "-m", metavar="PACKAGE", help="View metadata of a .deb file")
     parser.add_argument("--status", "-s", metavar="PACKAGE", help="Check publish status of a .deb file")
     parser.add_argument("--publish", "-p", metavar="PACKAGE", help="Publish a staged .deb package")
+    parser.add_argument("--remove", "-rm", metavar="PACKAGE", help="Remove a .deb package from staging or published")
+    parser.add_argument("--published", action="store_true", help="Used with --remove: remove from published repo")
+    parser.add_argument("--check", "-n", action="store_true", help="Simulate actions (used with publish/remove)")
 
     args = parser.parse_args()
 
@@ -117,5 +143,9 @@ if __name__ == "__main__":
         show_status(args.status if args.status else args.package)
     elif args.command == "meta" or args.meta:
         view_metadata(args.meta if args.meta else args.package)
+    elif args.command == "remove":
+        remove_package(args.package, from_published=args.published, check_mode=args.check)
+    elif args.remove:
+        remove_package(args.remove, from_published=args.published, check_mode=args.check)
     else:
         parser.print_help()
