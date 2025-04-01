@@ -16,7 +16,7 @@ parser.add_argument(
     "--config",
     "-c",
     help="Path to config file",
-    deafult=DEFAULT_CONFIG_PATH
+    default=DEFAULT_CONFIG_PATH
 )
 
 args = parser.parse_args()
