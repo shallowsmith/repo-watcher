@@ -8,6 +8,7 @@ import ansible_runner
 import logging
 import argparse
 from datetime import datetime
+from tools.reset_state import reset_state
 
 
 DEFAULT_CONFIG_PATH = "/opt/repo-watcher/monitor-config.json"
@@ -15,6 +16,7 @@ DEFAULT_CONFIG_PATH = "/opt/repo-watcher/monitor-config.json"
 parser = argparse.ArgumentParser(description="Github repo watcher")
 parser.add_argument("--config", "-c", help="Path to config file", default=DEFAULT_CONFIG_PATH)
 parser.add_argument("--once", action="store_true", help="Run a single check cycle and exit")
+parser.add_argument("--reset", action="store_true", help="Reset state/log files and exit")
 
 args = parser.parse_args()
 
@@ -132,6 +134,9 @@ def main():
 
     if args.once:
         run_check(state)
+    elif args.reset:
+        reset_state()
+        exit(0)
     else:
         while True:
             run_check(state)

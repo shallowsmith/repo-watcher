@@ -6,6 +6,7 @@ import json
 import subprocess
 from datetime import datetime
 from pathlib import Path
+from tools.reset_state import reset_state
 
 # Resource: https://docs.python.org/3.11/howto/argparse.html#argparse-tutorial
 
@@ -136,6 +137,9 @@ if __name__ == "__main__":
     remove_parser.add_argument("--published", action="store_true", help="Remove from published repo instead of staging")
     remove_parser.add_argument("--check", action="store_true", help="Simulate removal without deleting")
 
+    reset_parser = subparsers.add_parser("reset", help="Reset monitor log and state")
+    reset_parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation")
+
     # Optional flags
     parser.add_argument("--list", "-l", action="store_true", help="List staged .deb packages")
     parser.add_argument("--meta", "-m", metavar="PACKAGE", help="View metadata of a .deb file")
@@ -159,5 +163,7 @@ if __name__ == "__main__":
         remove_package(args.package, from_published=args.published, check_mode=args.check)
     elif args.remove:
         remove_package(args.remove, from_published=args.published, check_mode=args.check)
+    elif args.command == "reset":
+        reset_state(confirm=not args.yes)
     else:
         parser.print_help()
