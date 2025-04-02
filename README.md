@@ -49,6 +49,8 @@ If a new release or commit is detected:
 python3 monitor.py  # uses deafult config
 # or
 python3 monitor.py --config /path/to/config.json
+# or 
+python3 monitor.py --once # runs the program once
 ```
 
 
@@ -99,15 +101,6 @@ python3 cli/repoctl.py -p <package.deb>
 python3 cli/repoctl.py publish <package.deb> --check
 ```
 
-#### Reset repo state and log files
-```bash
-python3 tools/repo_state.py
-#or
-python3 monitor.py reset
-#or
-python3 cli/repoctl.py reset
-```
-
 ### Remove a package
 ```bash
 # Remove from staging (default)
@@ -118,6 +111,15 @@ python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb --published
 
 # Simulate removal (dry-run)
 python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb --check
+```
+
+#### Reset repo state and log files
+```bash
+python3 tools/repo_state.py
+#or
+python3 monitor.py reset
+#or
+python3 cli/repoctl.py reset
 ```
 
 ## TODO
