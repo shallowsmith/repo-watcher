@@ -7,6 +7,7 @@ import time
 import ansible_runner
 import logging
 import argparse
+from datetime import datetime
 
 
 DEFAULT_CONFIG_PATH = "/opt/repo-watcher/monitor-config.json"
@@ -50,12 +51,16 @@ def save_state(state):
 def check_release():
     r = requests.get(RELEASES_URL)
     r.raise_for_status()
-    return r.json()["tag_name"]
+    data = r.json()
+    return data["tag_name"], data.get("published_at", "unknown")
 
 def check_commit():
     r = requests.get(COMMITS_URL)
     r.raise_for_status()
-    return r.json()[0]["sha"]
+    data = r.json()[0]
+    sha = data["sha"]
+    date = data["commit"]["committer"]["date"]
+    return sha, date
 
 def trigger_pipeline(event_type, value):
     print(f"[ACTION] Trigger: {event_type} detected - {value}")
@@ -81,10 +86,20 @@ def trigger_pipeline(event_type, value):
     else:
         logging.info(f"Pipeline finished successfully: {r.status}")
 
+def format_date(iso_str):
+    try:
+        dt = datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
+        return dt.strftime("%b %d, %Y @ %I:%M %p")
+    except Exception:
+        return iso_str or "unknown"
+
 def run_check(state):
     try:
-        latest_release = check_release()
-        latest_commit = check_commit()
+        latest_release, raw_release_date = check_release()
+        latest_commit, raw_commit_date = check_commit()
+
+        release_date = format_date(raw_release_date)
+        commit_date = format_date(raw_commit_date)
 
         # Trigger release pipeline first
         if latest_release != state["latest_release"]:
@@ -100,6 +115,13 @@ def run_check(state):
             trigger_pipeline("commit", latest_commit)
             state["latest_commit"] = latest_commit
             save_state(state)
+        
+        else:
+            msg = (f"No new release or commit detected.\n"
+                f"Latest release: {state['latest_release']} (published: {release_date})\n"
+                f"Latest commit: {state['latest_commit']} (date: {commit_date})")
+            print(f"[INFO] {msg}")
+            logging.info(msg)
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
