@@ -124,17 +124,14 @@ python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb --check
 - [x] Separate between commit and release builds
 - [x] Implement dynamic version tagging for `.deb` files
 - [x] Make config path configurable via CLI flag
-- [ ] Let systemd run it with elevated privileges
 
 ### Repo Flow
 - [x] Define staging directory for review
 - [x] Build CLI tool (repoctl.py)
 - [x] Add a dry run flag to simulate actions without making changes
+- [x] Integrate testing framework using GitHub Actions
 - [ ] Push `.deb` to APT repo, validate on target machines
 - [ ] Package monitor.py as systemd-managed service
-- [ ] Add Slurm monitoring (future)
-- [x] Integrate testing framework using GitHub Actions
-
 
 ## 📝 Logging
 - `monitor.py`: Logs release/commit checks, errors, and pipeline triggers to `monitor.log`
