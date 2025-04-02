@@ -20,6 +20,10 @@ parser.add_argument("--reset", action="store_true", help="Reset state/log files 
 
 args = parser.parse_args()
 
+if args.reset:
+    reset_state()
+    exit(0)
+
 # Load config file
 with open(args.config) as f:
     config = json.load(f)
@@ -134,9 +138,6 @@ def main():
 
     if args.once:
         run_check(state)
-    elif args.reset:
-        reset_state()
-        exit(0)
     else:
         while True:
             run_check(state)
