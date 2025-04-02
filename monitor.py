@@ -12,12 +12,8 @@ import argparse
 DEFAULT_CONFIG_PATH = "/opt/repo-watcher/monitor-config.json"
 
 parser = argparse.ArgumentParser(description="Github repo watcher")
-parser.add_argument(
-    "--config",
-    "-c",
-    help="Path to config file",
-    deafult=DEFAULT_CONFIG_PATH
-)
+parser.add_argument("--config", "-c", help="Path to config file", default=DEFAULT_CONFIG_PATH)
+parser.add_argument("--once", action="store_true", help="Run a single check cycle and exit")
 
 args = parser.parse_args()
 
@@ -84,36 +80,40 @@ def trigger_pipeline(event_type, value):
         logging.error(f"Pipeline failed! Status: {r.status}, RC: {r.rc}")
     else:
         logging.info(f"Pipeline finished successfully: {r.status}")
-    
+
+def run_check(state):
+    try:
+        latest_release = check_release()
+        latest_commit = check_commit()
+
+        # Trigger release pipeline first
+        if latest_release != state["latest_release"]:
+            logging.info(f"New release detected: {latest_release}")
+            trigger_pipeline("release", latest_release)
+            state["latest_release"] = latest_release
+            state["latest_commit"] = latest_commit
+            save_state(state)
+
+        # Only trigger commit pipeline if no new release is found
+        elif latest_commit != state["latest_commit"]:
+            logging.info(f"New commit detected on main: {latest_commit}")
+            trigger_pipeline("commit", latest_commit)
+            state["latest_commit"] = latest_commit
+            save_state(state)
+
+    except Exception as e:
+        logging.error(f"Error occurred: {e}")
 
 def main():
     logging.info("Repo watcher service started.")
     state = load_state()
 
-    while True:
-        try:
-            latest_release = check_release()
-            latest_commit = check_commit()
-
-            # Trigger release pipeline first
-            if latest_release != state["latest_release"]:
-                logging.info(f"New release detected: {latest_release}")
-                trigger_pipeline("release", latest_release)
-                state["latest_release"] = latest_release
-                state["latest_commit"] = latest_commit
-                save_state(state)
-
-            # Only trigger commit pipeline if no new release is found
-            if latest_commit != state["latest_commit"]:
-                logging.info(f"New commit detected on main: {latest_commit}")
-                trigger_pipeline("commit", latest_commit)
-                state["latest_commit"] = latest_commit
-                save_state(state)
-
-        except Exception as e:
-            logging.error(f"Error occurred: {e}")
-
-        time.sleep(CHECK_INTERVAL)
+    if args.once:
+        run_check(state)
+    else:
+        while True:
+            run_check(state)
+            time.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
     main()

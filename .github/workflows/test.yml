@@ -1,0 +1,75 @@
+name: CLI + Monitor Tests
+
+on:
+  push:
+    branches: 
+      - test/**
+  
+  pull_request:
+    branches:
+      - test/**
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt 
+
+      - name: Prepare test environment
+        run: |
+          mkdir -p opt/staging opt/published opt/repo-watcher/log
+          touch opt/staging/testpkg_1.0.0.deb
+          echo 'Approved test package content' > opt/staging/testpkg_1.0.0.deb
+          echo '{
+            "staging_dir": "opt/staging",
+            "repo_dir": "opt/published",
+            "log_file": "opt/repo-watcher/log/repoctl.log"
+          }' > cli-config.json
+
+          echo '{
+            "owner": "NVIDIA",
+            "repo": "dcgm-exporter",
+            "check_interval": 5,
+            "state_file": "opt/repo-watcher/repo_state.json",
+            "log_file": "opt/repo-watcher/log/monitor.log"
+          }' > opt/repo-watcher/config.json
+
+      - name: Test repoctl list & publish (check mode)
+        run: |
+          python cli/repoctl.py --list | tee cli-output.log
+          python cli/repoctl.py publish testpkg_1.0.0.deb --check | tee -a cli-output.log
+
+      - name: Assert expected CLI output
+        run: |
+          grep "testpkg_1.0.0.deb" cli-output.log || (echo "Package name not listed"; exit 1)
+          grep "\[CHECK\] would publish" cli-output.log || (echo "Check-mode message not found"; exit 1)
+
+      - name: Test repoctl remove (check mode)
+        run: |
+          python cli/repoctl.py remove testpkg_1.0.0.deb --check | tee remove-output.log
+
+      - name: Assert expected remove output
+        run: |
+          grep "\[CHECK\] Would remove testpkg_1.0.0.deb" remove-output.log || (echo "Check-mode remove message not found"; exit 1)
+
+      - name: Simulate monitor.py run
+        run: |
+          source venv/bin/activate && python monitor.py --config opt/repo-watcher/config.json --once
+
+      - name: View repoctl log output
+        run: cat opt/repo-watcher/log/repoctl.log
+
+      - name: View monitor log output
+        run: cat opt/repo-watcher/log/monitor.log || echo "No monitor log created"
