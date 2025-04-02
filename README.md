@@ -2,7 +2,7 @@
 ## Overview
 This project contains two components: `monitor.py` and `repoctl.py`, working together to monitor an upstream GitHub repository, automatically build and stage `.deb` packages, and allow for manual promotion to an internal APT repository.
 
-- `monitor.py`: A Python systemd-compatible watcher service that monitors an upstream GitHub repository for new releases and commits to the main branch. It triggers an Ansible pipeline to build, package, and stage the binaries.
+- `monitor.py`: A Python-based systemd-compatible watcher service that monitors an upstream GitHub repository for new releases and commits to the main branch. It triggers an Ansible pipeline to build, package, and stage the binaries.
 - `repoctl.py`: A CLI tool to review staged `.deb` packages, view metadata, check promotion status, and promote packages to the published APT repo.
 
 ## Getting Started
@@ -49,6 +49,8 @@ If a new release or commit is detected:
 python3 monitor.py  # uses deafult config
 # or
 python3 monitor.py --config /path/to/config.json
+# or 
+python3 monitor.py --once # runs the program once
 ```
 
 
@@ -111,6 +113,15 @@ python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb --published
 python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb --check
 ```
 
+#### Reset repo state and log files
+```bash
+python3 tools/repo_state.py
+#or
+python3 monitor.py reset
+#or
+python3 cli/repoctl.py reset
+```
+
 ## TODO
 
 ### Watcher & Build Automation
@@ -133,11 +144,11 @@ python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb --check
 - [ ] Push `.deb` to APT repo, validate on target machines
 - [ ] Package monitor.py as systemd-managed service
 
-## Logging
+## 📝 Logging
 - `monitor.py`: Logs release/commit checks, errors, and pipeline triggers to `monitor.log`
 - `repoctl.py`: Logs CLI actions like listing, publishing, metadata inspection to `repoctl.log`
 
-### Testing on local environment for monitor.py:
+### Testing on local environment:
 - Navigate to /test
 
 ### Notes:

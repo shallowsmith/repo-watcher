@@ -7,6 +7,8 @@ import time
 import ansible_runner
 import logging
 import argparse
+from datetime import datetime
+from tools.reset_state import reset_state
 
 
 DEFAULT_CONFIG_PATH = "/opt/repo-watcher/monitor-config.json"
@@ -14,6 +16,7 @@ DEFAULT_CONFIG_PATH = "/opt/repo-watcher/monitor-config.json"
 parser = argparse.ArgumentParser(description="Github repo watcher")
 parser.add_argument("--config", "-c", help="Path to config file", default=DEFAULT_CONFIG_PATH)
 parser.add_argument("--once", action="store_true", help="Run a single check cycle and exit")
+parser.add_argument("--reset", action="store_true", help="Reset state/log files and exit")
 
 args = parser.parse_args()
 
@@ -50,12 +53,16 @@ def save_state(state):
 def check_release():
     r = requests.get(RELEASES_URL)
     r.raise_for_status()
-    return r.json()["tag_name"]
+    data = r.json()
+    return data["tag_name"], data.get("published_at", "unknown")
 
 def check_commit():
     r = requests.get(COMMITS_URL)
     r.raise_for_status()
-    return r.json()[0]["sha"]
+    data = r.json()[0]
+    sha = data["sha"]
+    date = data["commit"]["committer"]["date"]
+    return sha, date
 
 def trigger_pipeline(event_type, value):
     print(f"[ACTION] Trigger: {event_type} detected - {value}")
@@ -79,16 +86,26 @@ def trigger_pipeline(event_type, value):
     if r.rc != 0:
         logging.error(f"Pipeline failed! Status: {r.status}, RC: {r.rc}")
     else:
-        logging.info(f"Pipeline finished successfully: {r.status}")
+        logging.info(f"Pipeline finished: {r.status}")
+
+def format_date(iso_str):
+    try:
+        dt = datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
+        return dt.strftime("%b %d, %Y @ %I:%M %p")
+    except Exception:
+        return iso_str or "unknown"
 
 def run_check(state):
     try:
-        latest_release = check_release()
-        latest_commit = check_commit()
+        latest_release, raw_release_date = check_release()
+        latest_commit, raw_commit_date = check_commit()
+
+        release_date = format_date(raw_release_date)
+        commit_date = format_date(raw_commit_date)
 
         # Trigger release pipeline first
         if latest_release != state["latest_release"]:
-            logging.info(f"New release detected: {latest_release}")
+            logging.info(f"New release detected: {latest_release} (published: {release_date})")
             trigger_pipeline("release", latest_release)
             state["latest_release"] = latest_release
             state["latest_commit"] = latest_commit
@@ -96,10 +113,17 @@ def run_check(state):
 
         # Only trigger commit pipeline if no new release is found
         elif latest_commit != state["latest_commit"]:
-            logging.info(f"New commit detected on main: {latest_commit}")
+            logging.info(f"New commit detected on main: {latest_commit} (date: {commit_date})")
             trigger_pipeline("commit", latest_commit)
             state["latest_commit"] = latest_commit
             save_state(state)
+        
+        else:
+            msg = (f"No new release or commit detected.\n"
+                f"Latest release: {state['latest_release']} (published: {release_date})\n"
+                f"Latest commit: {state['latest_commit']} (date: {commit_date})")
+            print(f"[INFO] {msg}")
+            logging.info(msg)
 
     except Exception as e:
         logging.error(f"Error occurred: {e}")
@@ -110,6 +134,9 @@ def main():
 
     if args.once:
         run_check(state)
+    elif args.reset:
+        reset_state()
+        exit(0)
     else:
         while True:
             run_check(state)
