@@ -4,8 +4,11 @@ import shutil
 import logging
 import json
 import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 from tools.reset_state import reset_state
 
 # Resource: https://docs.python.org/3.11/howto/argparse.html#argparse-tutorial
