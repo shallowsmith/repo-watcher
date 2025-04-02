@@ -1,6 +1,13 @@
 name: CLI + Monitor Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches: 
+      - test/**
+  
+  pull_request:
+    branches:
+      - test/**
 
 jobs:
   test:
@@ -59,8 +66,7 @@ jobs:
 
       - name: Simulate monitor.py run
         run: |
-          source venv/bin/activate
-          python monitor.py --config opt/repo-watcher/config.json || true
+          source venv/bin/activate && python monitor.py --config opt/repo-watcher/config.json || true
 
       - name: View repoctl log output
         run: cat opt/repo-watcher/log/repoctl.log
