@@ -144,7 +144,7 @@ python3 cli/repoctl.py reset
 - [ ] Push `.deb` to APT repo, validate on target machines
 - [ ] Package monitor.py as systemd-managed service
 
-## 📝 Logging
+## Logging
 - `monitor.py`: Logs release/commit checks, errors, and pipeline triggers to `monitor.log`
 - `repoctl.py`: Logs CLI actions like listing, publishing, metadata inspection to `repoctl.log`
 
