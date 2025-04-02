@@ -84,7 +84,7 @@ def trigger_pipeline(event_type, value):
     if r.rc != 0:
         logging.error(f"Pipeline failed! Status: {r.status}, RC: {r.rc}")
     else:
-        logging.info(f"Pipeline finished successfully: {r.status}")
+        logging.info(f"Pipeline finished: {r.status}")
 
 def format_date(iso_str):
     try:
@@ -103,7 +103,7 @@ def run_check(state):
 
         # Trigger release pipeline first
         if latest_release != state["latest_release"]:
-            logging.info(f"New release detected: {latest_release}")
+            logging.info(f"New release detected: {latest_release} (published: {release_date})")
             trigger_pipeline("release", latest_release)
             state["latest_release"] = latest_release
             state["latest_commit"] = latest_commit
@@ -111,7 +111,7 @@ def run_check(state):
 
         # Only trigger commit pipeline if no new release is found
         elif latest_commit != state["latest_commit"]:
-            logging.info(f"New commit detected on main: {latest_commit}")
+            logging.info(f"New commit detected on main: {latest_commit} (date: {commit_date})")
             trigger_pipeline("commit", latest_commit)
             state["latest_commit"] = latest_commit
             save_state(state)
