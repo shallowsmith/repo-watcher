@@ -5,7 +5,7 @@ import json
 import threading
 import time
 from pathlib import Path
-import monitor_test
+from monitor_test import monitor_single_repo
 
 CONFIG_DIR = Path("configs")  
 DEFAULT_INTERVAL = 30 
@@ -13,21 +13,9 @@ DEFAULT_INTERVAL = 30
 def monitor_worker(config_path):
     with open(config_path) as f:
         config = json.load(f)
-
-    # Inject dynamic config into monitor_test.py
-    monitor_test.config = config
-    monitor_test.STATE_FILE = config.get("state_file")
-    monitor_test.LOG_FILE = config.get("log_file")
-    state = monitor_test.load_state()
-
-    interval = config.get("check_interval", DEFAULT_INTERVAL)
-    repo_id = f"{config['owner']}/{config['repo']}"
-
-    print(f"[Thread] Starting watcher for {repo_id} (every {interval}s)")
-
-    while True:
-        monitor_test.run_check(state)
-        time.sleep(interval)
+    repo_name = f"{config['owner']}/{config['repo']}"
+    print(f"[Thread] Starting watcher for {repo_name} (every {config.get('check_interval')}s)")
+    monitor_single_repo(config)
 
 def main():
     config_files = list(CONFIG_DIR.glob("*.json"))
