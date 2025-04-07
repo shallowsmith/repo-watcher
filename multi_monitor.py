@@ -5,23 +5,28 @@ import json
 import threading
 import time
 from pathlib import Path
-from monitor import run_check, load_state  
+import monitor
 
 CONFIG_DIR = Path("configs")  
-CHECK_INTERVAL = 30 # fallback interval 
+DEFAULT_INTERVAL = 30 
 
 def monitor_worker(config_path):
     with open(config_path) as f:
         config = json.load(f)
 
-    state = load_state(config.get("state_file"))
-    interval = config.get("check_interval", CHECK_INTERVAL)
-    repo_name = f"{config['owner']}/{config['repo']}"
+    # Inject dynamic config into monitor.py
+    monitor.config = config
+    monitor.STATE_FILE = config.get("state_file")
+    monitor.LOG_FILE = config.get("log_file")
+    state = monitor.load_state()
 
-    print(f"[Thread] Starting monitor for {repo_name}")
+    interval = config.get("check_interval", DEFAULT_INTERVAL)
+    repo_id = f"{config['owner']}/{config['repo']}"
+
+    print(f"[Thread] Starting watcher for {repo_id} (every {interval}s)")
 
     while True:
-        run_check(config, state)
+        monitor.run_check(state)
         time.sleep(interval)
 
 def main():
@@ -31,8 +36,8 @@ def main():
         return
 
     threads = []
-    for config_path in config_files:
-        t = threading.Thread(target=monitor_worker, args=(config_path,))
+    for cfg in config_files:
+        t = threading.Thread(target=monitor_worker, args=(cfg,))
         t.daemon = True
         t.start()
         threads.append(t)
