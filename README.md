@@ -129,6 +129,8 @@ python3 cli/repoctl.py reset
 - [x] Externalize configuration (config.json)
 - [x] Integrate Ansible Runner or subprocess trigger to call automation pipeline
 - [x] Deploy watcher service on lab VM
+- [ ] Multithreading support for multiple repos
+- [ ] Implement logic to watch specific releases and commits. 
 
 ### Ansible Build Pipeline
 - [x] Finalize playbook to clone repo, build, and package
