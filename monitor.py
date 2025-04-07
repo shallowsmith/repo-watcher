@@ -11,7 +11,7 @@ from datetime import datetime
 from tools.reset_state import reset_state
 
 
-DEFAULT_CONFIG_PATH = "/opt/repo-watcher/monitor-config.json"
+DEFAULT_CONFIG_PATH = "/opt/repo-watcher/configs/dcgm_exporter.json"
 
 parser = argparse.ArgumentParser(description="Github repo watcher")
 parser.add_argument("--config", "-c", help="Path to config file", default=DEFAULT_CONFIG_PATH)
