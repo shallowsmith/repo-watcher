@@ -12,7 +12,7 @@ env/
 # Ansible artifacts
 *.retry
 *.ansible_runner/
-pipeline/artifactss
+pipeline/artifacts
 
 # System files
 .DS_Store
