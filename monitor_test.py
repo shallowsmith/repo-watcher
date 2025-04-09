@@ -47,11 +47,11 @@ def monitor_single_repo(config):
     REPO = config["repo"]
     CHECK_INTERVAL = config["check_interval"]
     STATE_FILE = config["state_file"]
-    LOG_FILE = config["log_file"]
+    LOG_FILE = "log/repo-watcher.log"
 
     REPO_NAME = f"{OWNER}/{REPO}"
     RELEASES_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
-    COMMITS_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/commits?sha=main&per_page=1"
+    COMMITS_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/commits?sha={config.get('branch','main')}&per_page=1"
 
     # Ensure log path exists before logging starts
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
@@ -68,6 +68,7 @@ def monitor_single_repo(config):
         return {"latest_release": "", "latest_commit": ""}
 
     def save_state(state):
+        os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
         with open(STATE_FILE, "w") as f:
             json.dump(state, f)
 
@@ -92,15 +93,17 @@ def monitor_single_repo(config):
             commit_date = format_date(raw_commit_date)
 
             if latest_release != state["latest_release"]:
-                logging.info(f"New release detected: {latest_release} (published: {release_date})")
-                trigger_pipeline("release", latest_release, REPO_NAME)
+                logging.info(f"[{REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
+                print(f"[INFO] [{REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
+                #trigger_pipeline("release", latest_release, REPO_NAME)
                 state["latest_release"] = latest_release
                 state["latest_commit"] = latest_commit
                 save_state(state)
 
             elif latest_commit != state["latest_commit"]:
-                logging.info(f"New commit detected on main: {latest_commit} (date: {commit_date})")
-                trigger_pipeline("commit", latest_commit, REPO_NAME)
+                logging.info(f"[{REPO_NAME}] New commit detected on main: {latest_commit} (date: {commit_date})")
+                print(f"[INFO] [{REPO_NAME}] New commit detected on main: {latest_release} (published: {release_date})")
+                #trigger_pipeline("commit", latest_commit, REPO_NAME)
                 state["latest_commit"] = latest_commit
                 save_state(state)
 
@@ -108,8 +111,8 @@ def monitor_single_repo(config):
                 msg = (f"No new release or commit detected.\n"
                        f"Latest release: {state['latest_release']} (published: {release_date})\n"
                        f"Latest commit: {state['latest_commit']} (date: {commit_date})")
-                print(f"[INFO] {REPO_NAME}: {msg}")
-                logging.info(msg)
+                print(f"[{REPO_NAME}]: {msg}")
+                logging.info(f"[{REPO_NAME}]: {msg}")
 
         except Exception as e:
             logging.error(f"[{REPO_NAME}] Error occurred: {e}")

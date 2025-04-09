@@ -24,3 +24,6 @@ Thumbs.db
 
 # staging directory
 opt/staging/
+
+# State files
+state/
