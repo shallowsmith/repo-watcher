@@ -19,9 +19,9 @@ def format_date(iso_str):
     except Exception:
         return iso_str or "unknown"
 
-def trigger_pipeline(event_type, value, repo_name):
-    print(f"[ACTION] Trigger: {event_type} detected - {value} ({repo_name})")
-    logging.info(f"Triggering pipeline for {event_type} in {repo_name}: {value}")
+def trigger_pipeline(event_type, value, owner_repo_name, repo_name):
+    print(f"[ACTION] Trigger: {event_type} detected - {value} ({owner_repo_name})")
+    logging.info(f"Triggering pipeline for {event_type} in {owner_repo_name}: {value}")
 
     if event_type == "release":
         version = f"{value}-{time.strftime('%Y%m%d')}"
@@ -31,16 +31,28 @@ def trigger_pipeline(event_type, value, repo_name):
     else:
         version = "unknown"
 
-    r = ansible_runner.run(
-        private_data_dir='/opt/repo-watcher/pipeline',
-        playbook='build-and-package.yml',
-        envvars={"PACKAGE_VERSION": version}
-    )
+    logging.info(f"PACKAGE_VERSION: {version}")
 
-    if r.rc != 0:
-        logging.error(f"[{repo_name}] Pipeline failed! Status: {r.status}, RC: {r.rc}")
-    else:
-        logging.info(f"[{repo_name}] Pipeline finished: {r.status}")
+    runner_path = f"/opt/repo-watcher/pipeline/{repo_name}"
+    os.makedirs(runner_path, exist_ok=True)
+
+    try:
+        r = ansible_runner.run(
+            private_data_dir=runner_path,
+            playbook='test.yml',
+            envvars={"PACKAGE_VERSION": version,
+                     "OWNER_REPO_NAME": owner_repo_name,
+                     "REPO_NAME": repo_name,
+                     "EVENT_TYPE": event_type}
+        )
+
+        if r.rc != 0:
+            logging.error(f"[{owner_repo_name}] Pipeline failed! Status: {r.status}, RC: {r.rc}")
+        else:
+            logging.info(f"[{owner_repo_name}] Pipeline finished: {r.status}")
+
+    except Exception as e:
+        logging.error(f"[{owner_repo_name}] Pipeline execution error: {e}")
 
 def monitor_single_repo(config):
     OWNER = config["owner"]
@@ -49,7 +61,8 @@ def monitor_single_repo(config):
     STATE_FILE = config["state_file"]
     LOG_FILE = "log/repo-watcher.log"
 
-    REPO_NAME = f"{OWNER}/{REPO}"
+    OWNER_REPO_NAME = f"{OWNER}/{REPO}"
+    REPO_NAME = f"{REPO}"
     RELEASES_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
     COMMITS_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/commits?sha={config.get('branch','main')}&per_page=1"
 
@@ -93,17 +106,17 @@ def monitor_single_repo(config):
             commit_date = format_date(raw_commit_date)
 
             if latest_release != state["latest_release"]:
-                logging.info(f"[{REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
-                print(f"[INFO] [{REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
-                #trigger_pipeline("release", latest_release, REPO_NAME)
+                logging.info(f"[{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
+                print(f"[INFO] [{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
+                trigger_pipeline("release", latest_release, OWNER_REPO_NAME, REPO_NAME)
                 state["latest_release"] = latest_release
                 state["latest_commit"] = latest_commit
                 save_state(state)
 
             elif latest_commit != state["latest_commit"]:
-                logging.info(f"[{REPO_NAME}] New commit detected on main: {latest_commit} (date: {commit_date})")
-                print(f"[INFO] [{REPO_NAME}] New commit detected on main: {latest_release} (published: {release_date})")
-                #trigger_pipeline("commit", latest_commit, REPO_NAME)
+                logging.info(f"[{OWNER_REPO_NAME}] New commit detected on main: {latest_commit} (date: {commit_date})")
+                print(f"[INFO] [{OWNER_REPO_NAME}] New commit detected on main: {latest_release} (published: {release_date})")
+                trigger_pipeline("commit", latest_commit, OWNER_REPO_NAME, REPO_NAME)
                 state["latest_commit"] = latest_commit
                 save_state(state)
 
@@ -111,11 +124,11 @@ def monitor_single_repo(config):
                 msg = (f"No new release or commit detected.\n"
                        f"Latest release: {state['latest_release']} (published: {release_date})\n"
                        f"Latest commit: {state['latest_commit']} (date: {commit_date})")
-                print(f"[{REPO_NAME}]: {msg}")
-                logging.info(f"[{REPO_NAME}]: {msg}")
+                print(f"[{OWNER_REPO_NAME}]: {msg}")
+                logging.info(f"[{OWNER_REPO_NAME}]: {msg}")
 
         except Exception as e:
-            logging.error(f"[{REPO_NAME}] Error occurred: {e}")
+            logging.error(f"[{OWNER_REPO_NAME}] Error occurred: {e}")
 
     state = load_state()
     while True:
