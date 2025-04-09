@@ -158,3 +158,11 @@ Designed for internal use.
 
 ## Flowchart:
 <img src="./public/flowchart.svg" alt="Mermaid Chart" style="max-width: 20%;">
+
+#### NOTES:
+- Create the exec, create that file as a service definition instead. 
+- .deb should be with the service definition.
+- .deb should be started and run the service.
+- multiple packages and repo support.  
+- package controls itself
+- find the concept of depedencies 
