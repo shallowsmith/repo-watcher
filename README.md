@@ -129,7 +129,7 @@ python3 cli/repoctl.py reset
 - [x] Externalize configuration (config.json)
 - [x] Integrate Ansible Runner or subprocess trigger to call automation pipeline
 - [x] Deploy watcher service on lab VM
-- [ ] Multithreading support for multiple repos
+- [x] Multithreading support for multiple repos
 - [ ] Implement logic to watch specific releases and commits. 
 
 ### Ansible Build Pipeline
@@ -137,6 +137,7 @@ python3 cli/repoctl.py reset
 - [x] Separate between commit and release builds
 - [x] Implement dynamic version tagging for `.deb` files
 - [x] Make config path configurable via CLI flag
+- [ ] Write proper ansible playbook for correct automation (check dependencies)
 
 ### Repo Flow
 - [x] Define staging directory for review
@@ -159,10 +160,12 @@ Designed for internal use.
 ## Flowchart:
 <img src="./public/flowchart.svg" alt="Mermaid Chart" style="max-width: 20%;">
 
-#### NOTES:
+#### NOTES for self:
 - Create the exec, create that file as a service definition instead. 
 - .deb should be with the service definition.
 - .deb should be started and run the service.
 - multiple packages and repo support.  
 - package controls itself
 - find the concept of depedencies 
+
+- update the depricated flags and subcommands for monitor.py and also the logic for reset_state.py. 
