@@ -11,6 +11,7 @@ from datetime import datetime
 from tools.reset_state import reset_state
 
 DEFAULT_CONFIG_PATH = "/opt/repo-watcher/configs/dcgm_exporter.json"
+LOCK_TIMEOUT = 600
 
 def format_date(iso_str):
     try:
@@ -18,10 +19,21 @@ def format_date(iso_str):
         return dt.strftime("%b %d, %Y @ %I:%M %p")
     except Exception:
         return iso_str or "unknown"
+    
+def acquire_with_timeout(lock, timeout, name=""):
+    logging.info(f"[{name}] Waiting to acquire lock (timeout: {timeout}s)...")
+    acquired = lock.acquire(timeout=timeout)
+    if not acquired:
+        logging.error(f"[{name}] Timed out after {timeout}s waiting for lock.")
+    else:
+        logging.info(f"[{name}] Acquired lock - starting pipeline")
+    return True
 
-def trigger_pipeline(event_type, value, owner_repo_name, repo_name):
+def trigger_pipeline(event_type, value, owner_repo_name, repo_name, lock):
     print(f"[ACTION] Trigger: {event_type} detected - {value} ({owner_repo_name})")
     logging.info(f"Triggering pipeline for {event_type} in {owner_repo_name}: {value}")
+        
+    acquire_with_timeout(lock, LOCK_TIMEOUT, owner_repo_name)
 
     if event_type == "release":
         version = f"{value}-{time.strftime('%Y%m%d')}"
@@ -31,9 +43,7 @@ def trigger_pipeline(event_type, value, owner_repo_name, repo_name):
     else:
         version = "unknown"
 
-    logging.info(f"PACKAGE_VERSION: {version}")
-
-    runner_path = f"/opt/repo-watcher/pipeline/{repo_name}"
+    runner_path = f"/opt/repo-watcher/pipeline/"
     os.makedirs(runner_path, exist_ok=True)
 
     try:
@@ -54,7 +64,11 @@ def trigger_pipeline(event_type, value, owner_repo_name, repo_name):
     except Exception as e:
         logging.error(f"[{owner_repo_name}] Pipeline execution error: {e}")
 
-def monitor_single_repo(config):
+    finally:
+        lock.release()
+        logging.info(f"[{owner_repo_name}] Released lock")
+
+def monitor_single_repo(config, lock):
     OWNER = config["owner"]
     REPO = config["repo"]
     CHECK_INTERVAL = config["check_interval"]
@@ -108,7 +122,7 @@ def monitor_single_repo(config):
             if latest_release != state["latest_release"]:
                 logging.info(f"[{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
                 print(f"[INFO] [{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
-                trigger_pipeline("release", latest_release, OWNER_REPO_NAME, REPO_NAME)
+                trigger_pipeline("release", latest_release, OWNER_REPO_NAME, REPO_NAME, lock)
                 state["latest_release"] = latest_release
                 state["latest_commit"] = latest_commit
                 save_state(state)
@@ -116,7 +130,7 @@ def monitor_single_repo(config):
             elif latest_commit != state["latest_commit"]:
                 logging.info(f"[{OWNER_REPO_NAME}] New commit detected on main: {latest_commit} (date: {commit_date})")
                 print(f"[INFO] [{OWNER_REPO_NAME}] New commit detected on main: {latest_release} (published: {release_date})")
-                trigger_pipeline("commit", latest_commit, OWNER_REPO_NAME, REPO_NAME)
+                trigger_pipeline("commit", latest_commit, OWNER_REPO_NAME, REPO_NAME, lock)
                 state["latest_commit"] = latest_commit
                 save_state(state)
 

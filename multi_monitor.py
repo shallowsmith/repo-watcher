@@ -10,10 +10,11 @@ from monitor_test import monitor_single_repo
 
 CONFIG_DIR = Path("configs")  
 DEFAULT_INTERVAL = 30 
+LOG_FILE = "log/repo-watcher.log"
 
-def write_log(msg):
-    LOG_FILE="log/repo-watcher.log"
+lock = threading.Lock()
 
+def setup_log():
     # Ensure log path exists before logging starts
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     logging.basicConfig(
@@ -21,7 +22,6 @@ def write_log(msg):
         level=logging.INFO,
         format='%(asctime)s [%(levelname)s] %(message)s'
     )
-    logging.info(msg)
 
 def monitor_worker(config_path):
     with open(config_path) as f:
@@ -29,15 +29,17 @@ def monitor_worker(config_path):
     repo_name = f"{config['owner']}/{config['repo']}"
     msg = f"[Thread] [{repo_name}] Starting watcher for {repo_name} (every {config.get('check_interval')}s)"
     print(f"{msg}")
-    write_log(f"{msg}")
-    monitor_single_repo(config)
+    logging.info(f"{msg}")
+    monitor_single_repo(config, lock)
 
 def main():
+    setup_log()
+
     config_files = list(CONFIG_DIR.glob("*.json"))
     if not config_files:
         msg = "[ERROR] No config files found in configs/"
         print(f"{msg}")
-        write_log(f"{msg}")
+        logging.error(f"{msg}")
         return
 
     threads = []
