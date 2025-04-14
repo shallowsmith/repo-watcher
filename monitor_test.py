@@ -50,10 +50,10 @@ def trigger_pipeline(event_type, value, owner_repo_name, repo_name, lock):
         r = ansible_runner.run(
             private_data_dir=runner_path,
             playbook='test.yml',
-            envvars={"PACKAGE_VERSION": version,
-                     "OWNER_REPO_NAME": owner_repo_name,
-                     "REPO_NAME": repo_name,
-                     "EVENT_TYPE": event_type}
+            extravars={"pkg_version": version,
+                     "owner_pkg_name": owner_repo_name,
+                     "pkg_name": repo_name,
+                     "event_type": event_type}
         )
 
         if r.rc != 0:
