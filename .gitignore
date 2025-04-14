@@ -12,6 +12,7 @@ env/
 # Ansible artifacts
 *.retry
 *.ansible_runner/
+pipeline/project/test.yml
 pipeline/artifacts
 
 # System files
