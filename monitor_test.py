@@ -27,13 +27,14 @@ def acquire_with_timeout(lock, timeout, name=""):
         logging.error(f"[{name}] Timed out after {timeout}s waiting for lock.")
     else:
         logging.info(f"[{name}] Acquired lock - starting pipeline")
-    return True
+    return acquired
 
 def trigger_pipeline(event_type, value, owner_repo_name, repo_name, lock):
     print(f"[ACTION] Trigger: {event_type} detected - {value} ({owner_repo_name})")
-    logging.info(f"Triggering pipeline for {event_type} in {owner_repo_name}: {value}")
+    logging.info(f"[ACTION] Triggering pipeline for {event_type} in {owner_repo_name}: {value}")
         
-    acquire_with_timeout(lock, LOCK_TIMEOUT, owner_repo_name)
+    if not acquire_with_timeout(lock, LOCK_TIMEOUT, owner_repo_name):
+        return False
 
     if event_type == "release":
         version = f"{value}-{time.strftime('%Y%m%d')}"
@@ -58,11 +59,14 @@ def trigger_pipeline(event_type, value, owner_repo_name, repo_name, lock):
 
         if r.rc != 0:
             logging.error(f"[{owner_repo_name}] Pipeline failed! Status: {r.status}, RC: {r.rc}")
+            return False
         else:
             logging.info(f"[{owner_repo_name}] Pipeline finished: {r.status}")
+            return True
 
     except Exception as e:
         logging.error(f"[{owner_repo_name}] Pipeline execution error: {e}")
+        return False
 
     finally:
         lock.release()
@@ -100,21 +104,36 @@ def monitor_single_repo(config, lock):
             json.dump(state, f)
 
     def check_release():
-        r = requests.get(RELEASES_URL)
-        r.raise_for_status()
-        data = r.json()
-        return data["tag_name"], data.get("published_at", "unknown")
+        try: 
+            r = requests.get(RELEASES_URL)
+            r.raise_for_status()
+            data = r.json()
+            return data["tag_name"], data.get("published_at", "unknown")
+        except requests.exceptions.HTTPError as e:
+            logging.error(f"[{OWNER_REPO_NAME}] GitHub API HTTP Error (release): {e}")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"[{OWNER_REPO_NAME}] GitHub API Request Exception (release): {e}")
+        return None, None
 
     def check_commit():
-        r = requests.get(COMMITS_URL)
-        r.raise_for_status()
-        data = r.json()[0]
-        return data["sha"], data["commit"]["committer"]["date"]
+        try:
+            r = requests.get(COMMITS_URL)
+            r.raise_for_status()
+            data = r.json()[0]
+            return data["sha"], data["commit"]["committer"]["date"]
+        except requests.exceptions.HTTPError as e:
+            logging.error(f"[{OWNER_REPO_NAME}] GitHub API HTTP Error (commit): {e}")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"[{OWNER_REPO_NAME}] GitHub API Request Exception (release): {e}")
+        return None, None
 
     def run_check(state):
         try:
             latest_release, raw_release_date = check_release()
             latest_commit, raw_commit_date = check_commit()
+
+            if not latest_release or not latest_commit:
+                logging.warning(f"[{OWNER_REPO_NAME}] Skipping check cycle due to API error.")
 
             release_date = format_date(raw_release_date)
             commit_date = format_date(raw_commit_date)
@@ -122,17 +141,19 @@ def monitor_single_repo(config, lock):
             if latest_release != state["latest_release"]:
                 logging.info(f"[{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
                 print(f"[INFO] [{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
-                trigger_pipeline("release", latest_release, OWNER_REPO_NAME, REPO_NAME, lock)
-                state["latest_release"] = latest_release
-                state["latest_commit"] = latest_commit
-                save_state(state)
+                is_successful = trigger_pipeline("release", latest_release, OWNER_REPO_NAME, REPO_NAME, lock)
+                if is_successful:
+                    state["latest_release"] = latest_release
+                    state["latest_commit"] = latest_commit
+                    save_state(state)
 
             elif latest_commit != state["latest_commit"]:
                 logging.info(f"[{OWNER_REPO_NAME}] New commit detected on main: {latest_commit} (date: {commit_date})")
                 print(f"[INFO] [{OWNER_REPO_NAME}] New commit detected on main: {latest_release} (published: {release_date})")
-                trigger_pipeline("commit", latest_commit, OWNER_REPO_NAME, REPO_NAME, lock)
-                state["latest_commit"] = latest_commit
-                save_state(state)
+                is_successful = trigger_pipeline("commit", latest_commit, OWNER_REPO_NAME, REPO_NAME, lock)
+                if is_successful:
+                    state["latest_commit"] = latest_commit
+                    save_state(state)
 
             else:
                 msg = (f"No new release or commit detected.\n"
