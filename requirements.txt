@@ -2,10 +2,13 @@ ansible-runner==2.4.0
 certifi==2025.1.31
 charset-normalizer==3.4.1
 idna==3.10
+iniconfig==2.1.0
 lockfile==0.12.2
 packaging==24.2
 pexpect==4.9.0
+pluggy==1.5.0
 ptyprocess==0.7.0
+pytest==8.3.5
 python-daemon==3.1.2
 PyYAML==6.0.2
 requests==2.32.3
