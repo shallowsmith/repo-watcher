@@ -137,6 +137,7 @@ python3 cli/repoctl.py reset
 - [x] Separate between commit and release builds
 - [x] Implement dynamic version tagging for `.deb` files
 - [x] Make config path configurable via CLI flag
+- [ ] Major refactor to follow the [Good Practices for Ansible](https://redhat-cop.github.io/automation-good-practices/)
 - [ ] Write proper ansible playbook for correct automation (check dependencies)
 
 ### Repo Flow
