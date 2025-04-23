@@ -8,6 +8,7 @@ __pycache__/
 # Virtualenv
 venv/
 env/
+backdate-commit.sh
 
 # Ansible artifacts
 *.retry
