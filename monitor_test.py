@@ -54,7 +54,9 @@ def trigger_pipeline(event_type, value, owner_repo_name, repo_name, lock):
             extravars={"pkg_version": version,
                      "owner_pkg_name": owner_repo_name,
                      "pkg_name": repo_name,
-                     "event_type": event_type}
+                     "event_type": event_type,
+                     "git_url": config["repo_url"],
+                    }
         )
 
         if r.rc != 0:
