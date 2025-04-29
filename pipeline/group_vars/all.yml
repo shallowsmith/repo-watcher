@@ -1,0 +1,28 @@
+---
+# Building locations
+staging_dir: /opt/staging
+build_root: /tmp/build
+
+# Repository URLs
+dcgm_repo_url: https://github.com/NVIDIA/DCGM.git
+dcgm_exporter_repo_url: https://github.com/NVIDIA/dcgm-exporter.git
+node_exporter_repo_url: https://github.com/prometheus/node_exporter.git
+
+# Default branches/versions
+dcgm_default_branch: master
+dcgm_exporter_default_branch: main
+node_exporter_default_branch: master
+
+# System dependencies
+common_packages:
+  - git
+  - make
+  - dpkg-dev
+  - build-essential
+
+go_packages:
+  - golang-go
+
+# Service settings
+service_user: ""
+service_group: ""

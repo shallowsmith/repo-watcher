@@ -1,0 +1,19 @@
+[Unit]
+Description=Prometheus Node Exporter
+Documentation=https://github.com/prometheus/node_exporter
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node_exporter {% if service_args is defined %}{{ service_args }}{% endif %}
+
+{% if service_user is defined %}
+User={{ service_user }}
+Group={{ service_group | default(service_user) }}
+{% endif %}
+
+Restart=on-failure
+RestartSec=15
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

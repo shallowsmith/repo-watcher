@@ -1,0 +1,32 @@
+---
+- name: Build and Package Exporter
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  become: yes
+  vars:
+    exporter: "{{ exporter_name | mandatory }}"
+    version: "{{ version | mandatory }}"
+    git_ref: "{{ git_ref | default('HEAD') }}"
+    repo_url: "{{ repo_url | mandatory }}"
+    build_root: "{{ build_root | default('/tmp/build') }}"
+    staging_dir: "{{ staging_dir | default('/opt/staging') }}"
+
+  tasks:
+    - name: Include common setup tasks
+      include_role:
+        name: common
+
+    - name: Include exporter-specific role
+      include_role:
+        name: "{{ exporter }}"
+      vars:
+        exporter_version: "{{ version }}"
+        exporter_git_ref: "{{ git_ref }}"
+
+    - name: Package as .deb
+      include_role:
+        name: package_builder
+      vars:
+        pkg_name: "{{ exporter }}"
+        pkg_version: "{{ version }}"

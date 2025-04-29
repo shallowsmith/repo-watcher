@@ -1,0 +1,49 @@
+---
+- name: Create package directory structure
+  file:
+    path: "{{ build_root }}/{{ pkg_name }}_pkg/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "DEBIAN"
+    - "usr/bin"
+    - "etc/systemd/system"
+
+- name: Copy binary to package directory
+  copy:
+    src: "/usr/bin/{{ pkg_name | replace('_', '-') }}"
+    dest: "{{ build_root }}/{{ pkg_name }}_pkg/usr/bin/{{ pkg_name | replace('_', '-') }}"
+    remote_src: yes
+    mode: "0755"
+  when: pkg_name != "dcgm"
+
+- name: Copy systemd service file to package
+  copy:
+    src: "{{ build_root }}/{{ pkg_name }}/{{ pkg_name | replace('_', '-') }}.service"
+    dest: "{{ build_root }}/{{ pkg_name }}_pkg/etc/systemd/system/{{ pkg_name | replace('_', '-') }}.service"
+    remote_src: yes
+    mode: "0644"
+
+- name: Create DEBIAN control file from template
+  template:
+    src: "control.j2"
+    dest: "{{ build_root }}/{{ pkg_name }}_pkg/DEBIAN/control"
+    mode: "0644"
+
+- name: Create post-install script
+  template:
+    src: "postinst.j2"
+    dest: "{{ build_root }}/{{ pkg_name }}_pkg/DEBIAN/postinst"
+    mode: "0755"
+
+- name: Build .deb package
+  command: >
+    dpkg-deb --build {{ build_root }}/{{ pkg_name }}_pkg {{ staging_dir }}/{{ pkg_name }}_{{ pkg_version }}.deb
+
+- name: Display package info
+  command: dpkg-deb -I {{ staging_dir }}/{{ pkg_name }}_{{ pkg_version }}.deb
+  register: package_info
+
+- name: Package built successfully
+  debug:
+    msg: "Built {{ staging_dir }}/{{ pkg_name }}_{{ pkg_version }}.deb"

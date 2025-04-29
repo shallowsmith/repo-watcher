@@ -1,0 +1,41 @@
+---
+- name: Setup build dependencies for exporters
+  hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install common build dependencies
+      apt:
+        name:
+          - git
+          - make
+          - dpkg-dev
+          - build-essential
+          - golang-go
+          - docker.io
+        state: present
+
+    - name: Create monitoring user
+      user:
+        name: prometheus
+        system: yes
+        create_home: no
+        shell: /sbin/nologin
+        state: present
+
+    - name: Create directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "/opt/staging"
+        - "/opt/published"
+        - "/opt/repo-watcher/log"
+        - "/opt/repo-watcher/state"
+        - "/etc/dcgm-exporter"

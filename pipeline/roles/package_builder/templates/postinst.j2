@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+
+# Reload systemd configuration
+systemctl daemon-reload
+
+# Enable but don't start the service
+systemctl enable {{ pkg_name | replace('_', '-') }}
+
+# Create user if it doesn't exist
+if ! getent passwd {{ service_user | default('prometheus') }} > /dev/null; then
+    useradd --system --no-create-home --shell /bin/false {{ service_user | default('prometheus') }}
+fi
+
+{% if post_install_commands is defined %}
+# Custom post-install commands
+{% for cmd in post_install_commands %}
+{{ cmd }}
+{% endfor %}
+{% endif %}
+
+exit 0

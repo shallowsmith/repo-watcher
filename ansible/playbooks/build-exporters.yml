@@ -1,8 +1,0 @@
-- name: Build all the enabled softwares into staging directory
-  hosts: local
-  gather_facts: false
-  become: true
-
-  roles: 
-    - role: dcgm_exporter
-    - role: node-exporter

@@ -1,0 +1,30 @@
+---
+- name: Install DCGM dependencies
+  apt:
+    name:
+      - docker.io
+    state: present
+
+- name: Build DCGM using Docker
+  shell:
+    cmd: |
+      cd {{ build_root }}/{{ exporter }}
+      # The build image is created first
+      ./build.sh
+      # Then build a debian package
+      ./build.sh --packages --deb --arch=amd64 --os=Ubuntu20_04
+    creates: "{{ build_root }}/{{ exporter }}/_out/Linux-amd64-release/*.deb"
+
+- name: Find built DCGM package
+  find:
+    paths: "{{ build_root }}/{{ exporter }}/_out/Linux-amd64-release/"
+    patterns: "datacenter-gpu-manager*.deb"
+  register: dcgm_packages
+
+- name: Copy DCGM package to staging
+  copy:
+    src: "{{ item.path }}"
+    dest: "{{ staging_dir }}/{{ exporter }}_{{ version }}.deb"
+    remote_src: yes
+  with_items: "{{ dcgm_packages.files }}"
+  when: dcgm_packages.files|length > 0

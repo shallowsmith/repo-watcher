@@ -1,0 +1,13 @@
+Package: {{ pkg_name }}
+Version: {{ pkg_version }}
+Section: monitoring
+Priority: optional
+Architecture: amd64
+Maintainer: {{ maintainer | default('James <james@stninc.com>') }}
+{% if depends is defined and depends %}
+Depends: {{ depends | join(', ') }}
+{% endif %}
+Description: {{ description | default(pkg_name | capitalize + ' exporter for Prometheus') }}
+ Automatically built by repo-watcher on {{ ansible_date_time.date }}.
+ Source: {{ repo_url }}
+ Version/Commit: {{ git_ref }}
