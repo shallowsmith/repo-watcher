@@ -1,0 +1,29 @@
+---
+- name: Ensure build directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ build_root }}"
+    - "{{ staging_dir }}"
+
+- name: Clean previous build artifacts
+  file:
+    path: "{{ build_root }}/{{ exporter }}"
+    state: absent
+
+- name: Clone repository
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ build_root }}/{{ exporter }}"
+    version: "{{ exporter_git_ref }}"
+    force: yes
+
+- name: Ensure service user exists
+  user:
+    name: "{{ service_user }}"
+    system: yes
+    create_home: no
+    shell: /sbin/nologin
+    state: present

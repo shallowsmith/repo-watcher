@@ -1,4 +1,5 @@
 ---
+
 - name: Create package directory structure
   file:
     path: "{{ build_root }}/{{ pkg_name }}_pkg/{{ item }}"
@@ -8,6 +9,18 @@
     - "DEBIAN"
     - "usr/bin"
     - "etc/systemd/system"
+    
+- name: Set proper permissions for service directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ service_user }}"
+    group: "{{ service_group }}"
+    mode: '0755'
+  loop:
+    - "/var/log/{{ pkg_name }}"
+    - "/etc/{{ pkg_name | replace('_', '-') }}"
+  ignore_errors: yes
 
 - name: Copy binary to package directory
   copy:

@@ -4,13 +4,16 @@ set -e
 # Reload systemd configuration
 systemctl daemon-reload
 
-# Enable but don't start the service
+# Enable the service but don't start it
 systemctl enable {{ pkg_name | replace('_', '-') }}
 
-# Create user if it doesn't exist
-if ! getent passwd {{ service_user | default('prometheus') }} > /dev/null; then
-    useradd --system --no-create-home --shell /bin/false {{ service_user | default('prometheus') }}
-fi
+# Create log and configuration directories if they don't exist
+mkdir -p /var/log/{{ pkg_name }}
+mkdir -p /etc/{{ pkg_name | replace('_', '-') }}
+
+# Set proper permissions
+chown -R {{ service_user }}:{{ service_group }} /var/log/{{ pkg_name }}
+chown -R {{ service_user }}:{{ service_group }} /etc/{{ pkg_name | replace('_', '-') }}
 
 {% if post_install_commands is defined %}
 # Custom post-install commands
@@ -18,5 +21,8 @@ fi
 {{ cmd }}
 {% endfor %}
 {% endif %}
+
+echo "Package {{ pkg_name }} installed successfully. Service is enabled but not started."
+echo "To start the service, run: sudo systemctl start {{ pkg_name | replace('_', '-') }}"
 
 exit 0
