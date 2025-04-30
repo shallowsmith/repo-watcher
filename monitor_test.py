@@ -50,12 +50,14 @@ def trigger_pipeline(event_type, value, owner_repo_name, repo_name, lock):
     try:
         r = ansible_runner.run(
             private_data_dir=runner_path,
-            playbook='test.yml',
+            playbook='playbooks/build-exporter.yml',
             extravars={"pkg_version": version,
                      "owner_pkg_name": owner_repo_name,
                      "pkg_name": repo_name,
                      "event_type": event_type,
                      "git_url": config["repo_url"],
+                     "service_user": "james",
+                     "service_group": "james"
                     }
         )
 
