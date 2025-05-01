@@ -22,7 +22,7 @@
 
     - name: Create monitoring user
       user:
-        name: prometheus
+        name: james
         system: yes
         create_home: no
         shell: /sbin/nologin

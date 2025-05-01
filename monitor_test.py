@@ -7,11 +7,18 @@ import time
 import ansible_runner
 import logging
 import argparse
+import threading
 from datetime import datetime
-from tools.reset_state import reset_state
+from pathlib import Path
 
 DEFAULT_CONFIG_PATH = "/opt/repo-watcher/configs/dcgm_exporter.json"
 LOCK_TIMEOUT = 600
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] [%(levelname)s] %(message)s',
+)
 
 def format_date(iso_str):
     try:
@@ -29,49 +36,64 @@ def acquire_with_timeout(lock, timeout, name=""):
         logging.info(f"[{name}] Acquired lock - starting pipeline")
     return acquired
 
-def trigger_pipeline(event_type, value, owner_repo_name, repo_name, lock):
+def trigger_pipeline(event_type, value, repo_config, lock):
+    """Trigger Ansible pipeline for a repository release or commit change."""
+    repo_name = repo_config['repo'].lower()
+    owner_name = repo_config['owner'].lower()
+    exporter_name = repo_name.replace('-', '_')
+    owner_repo_name = f"{owner_name}/{repo_name}"
+    
     print(f"[ACTION] Trigger: {event_type} detected - {value} ({owner_repo_name})")
     logging.info(f"[ACTION] Triggering pipeline for {event_type} in {owner_repo_name}: {value}")
-        
+    
     if not acquire_with_timeout(lock, LOCK_TIMEOUT, owner_repo_name):
         return False
 
+    # Determine version and git reference
     if event_type == "release":
-        version = f"{value}-{time.strftime('%Y%m%d')}"
+        version = f"{value.strip('v')}-{time.strftime('%Y%m%d')}"
+        git_ref = value
     elif event_type == "commit":
         short_sha = value[:7]
-        version = f"commit{short_sha}-{time.strftime('%Y%m%d')}"
+        version = f"commit-{short_sha}-{time.strftime('%Y%m%d')}"
+        git_ref = value
     else:
         version = "unknown"
-
-    runner_path = f"/opt/repo-watcher/pipeline/"
-    os.makedirs(runner_path, exist_ok=True)
-
+        git_ref = "HEAD"
+    
+    # Run ansible pipeline
     try:
+        runner_path = "/opt/repo-watcher/pipeline"
+        os.makedirs(runner_path, exist_ok=True)
+        
         r = ansible_runner.run(
             private_data_dir=runner_path,
-            playbook='playbooks/build-exporter.yml',
-            extravars={"pkg_version": version,
-                     "owner_pkg_name": owner_repo_name,
-                     "pkg_name": repo_name,
-                     "event_type": event_type,
-                     "git_url": config["repo_url"],
-                     "service_user": "james",
-                     "service_group": "james"
-                    }
+            project_dir = '/opt/repo-watcher/ansible',
+            playbook='playbooks/build-packages.yml',
+            extravars={
+                "exporter_name": exporter_name,
+                "version": version,
+                "git_ref": git_ref,
+                "repo_url": repo_config["repo_url"],
+                "service_user": "james",
+                "service_group": "james",
+                "maintainer": "james@stninc.com",
+                "description": f"{repo_name} exporter for monitoring {owner_name} components",
+                "build_root": "/tmp/build",
+                "staging_dir": "/opt/staging"
+            }
         )
 
         if r.rc != 0:
             logging.error(f"[{owner_repo_name}] Pipeline failed! Status: {r.status}, RC: {r.rc}")
             return False
         else:
-            logging.info(f"[{owner_repo_name}] Pipeline finished: {r.status}")
+            logging.info(f"[{owner_repo_name}] Pipeline finished successfully: {r.status}")
             return True
 
     except Exception as e:
         logging.error(f"[{owner_repo_name}] Pipeline execution error: {e}")
         return False
-
     finally:
         lock.release()
         logging.info(f"[{owner_repo_name}] Released lock")
@@ -81,20 +103,16 @@ def monitor_single_repo(config, lock):
     REPO = config["repo"]
     CHECK_INTERVAL = config["check_interval"]
     STATE_FILE = config["state_file"]
-    LOG_FILE = "log/repo-watcher.log"
+    LOG_FILE = config.get("log_file", "log/repo-watcher.log")
+    BRANCH = config.get("branch", "main")
 
     OWNER_REPO_NAME = f"{OWNER}/{REPO}"
     REPO_NAME = f"{REPO}"
     RELEASES_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
-    COMMITS_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/commits?sha={config.get('branch','main')}&per_page=1"
+    COMMITS_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/commits?sha={BRANCH}&per_page=1"
 
-    # Ensure log path exists before logging starts
+    # Ensure log path exists
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-    logging.basicConfig(
-        filename=LOG_FILE,
-        level=logging.INFO,
-        format='%(asctime)s [%(levelname)s] %(message)s'
-    )
 
     def load_state():
         if os.path.exists(STATE_FILE):
@@ -138,6 +156,7 @@ def monitor_single_repo(config, lock):
 
             if not latest_release or not latest_commit:
                 logging.warning(f"[{OWNER_REPO_NAME}] Skipping check cycle due to API error.")
+                return
 
             release_date = format_date(raw_release_date)
             commit_date = format_date(raw_commit_date)
@@ -145,16 +164,16 @@ def monitor_single_repo(config, lock):
             if latest_release != state["latest_release"]:
                 logging.info(f"[{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
                 print(f"[INFO] [{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
-                is_successful = trigger_pipeline("release", latest_release, OWNER_REPO_NAME, REPO_NAME, lock)
+                is_successful = trigger_pipeline("release", latest_release, config, lock)
                 if is_successful:
                     state["latest_release"] = latest_release
                     state["latest_commit"] = latest_commit
                     save_state(state)
 
             elif latest_commit != state["latest_commit"]:
-                logging.info(f"[{OWNER_REPO_NAME}] New commit detected on main: {latest_commit} (date: {commit_date})")
-                print(f"[INFO] [{OWNER_REPO_NAME}] New commit detected on main: {latest_release} (published: {release_date})")
-                is_successful = trigger_pipeline("commit", latest_commit, OWNER_REPO_NAME, REPO_NAME, lock)
+                logging.info(f"[{OWNER_REPO_NAME}] New commit detected on {BRANCH}: {latest_commit} (date: {commit_date})")
+                print(f"[INFO] [{OWNER_REPO_NAME}] New commit detected on {BRANCH}: {latest_commit} (date: {commit_date})")
+                is_successful = trigger_pipeline("commit", latest_commit, config, lock)
                 if is_successful:
                     state["latest_commit"] = latest_commit
                     save_state(state)
@@ -170,9 +189,38 @@ def monitor_single_repo(config, lock):
             logging.error(f"[{OWNER_REPO_NAME}] Error occurred: {e}")
 
     state = load_state()
+    logging.info(f"[{OWNER_REPO_NAME}] Starting monitoring with check interval: {CHECK_INTERVAL}s")
+    
     while True:
         run_check(state)
         time.sleep(CHECK_INTERVAL)
+
+def reset_state(confirm=True):
+    STATE_FILES_DIR = "/opt/repo-watcher/state"
+    LOG_FILES_DIR = "/opt/repo-watcher/log"
+    
+    if confirm:
+        print("This will delete all state and log files. Continue? (y/N):")
+        confirm_input = input().strip().lower()
+        if confirm_input != "y":
+            print("[CANCELLED] No changes made.")
+            return
+    
+    # Clean state files
+    if os.path.exists(STATE_FILES_DIR):
+        for file in os.listdir(STATE_FILES_DIR):
+            if file.endswith(".json"):
+                os.remove(os.path.join(STATE_FILES_DIR, file))
+                print(f"[OK] Removed state file: {file}")
+    
+    # Clean log files
+    if os.path.exists(LOG_FILES_DIR):
+        for file in os.listdir(LOG_FILES_DIR):
+            if file.endswith(".log"):
+                os.remove(os.path.join(LOG_FILES_DIR, file))
+                print(f"[OK] Removed log file: {file}")
+    
+    print("[OK] Reset complete.")
 
 # ───────── CLI ENTRY POINT ─────────
 if __name__ == "__main__":
@@ -180,29 +228,51 @@ if __name__ == "__main__":
     parser.add_argument("--config", "-c", help="Path to config file", default=DEFAULT_CONFIG_PATH)
     parser.add_argument("--once", action="store_true", help="Run a single check cycle and exit")
     parser.add_argument("--reset", action="store_true", help="Reset state/log files and exit")
+    parser.add_argument("--multi", action="store_true", help="Monitor multiple repos from configs directory")
     args = parser.parse_args()
 
     if args.reset:
         reset_state()
         exit(0)
 
-    with open(args.config) as f:
-        config = json.load(f)
+    # Global lock for ansible operations
+    lock = threading.Lock()
 
-    # Allow a single-run check for test/debug
-    if args.once:
-        def one_time_run():
-            OWNER = config["owner"]
-            REPO = config["repo"]
-            CHECK_INTERVAL = config["check_interval"]
-            STATE_FILE = config["state_file"]
-            state = {}
-            if os.path.exists(STATE_FILE):
-                with open(STATE_FILE) as f:
-                    state = json.load(f)
-            else:
-                state = {"latest_release": "", "latest_commit": ""}
-            monitor_single_repo(config)
-        one_time_run()
+    if args.multi:
+        # Monitor multiple repositories
+        CONFIG_DIR = Path("/opt/repo-watcher/configs")
+        config_files = list(CONFIG_DIR.glob("*.json"))
+        
+        if not config_files:
+            logging.error("No config files found in configs/")
+            exit(1)
+        
+        threads = []
+        for cfg_file in config_files:
+            with open(cfg_file) as f:
+                config = json.load(f)
+            
+            t = threading.Thread(target=monitor_single_repo, args=(config, lock))
+            t.daemon = True
+            t.start()
+            threads.append(t)
+            
+        # Wait for threads
+        for t in threads:
+            t.join()
     else:
-        monitor_single_repo(config)
+        # Monitor single repository
+        with open(args.config) as f:
+            config = json.load(f)
+        
+        if args.once:
+            # Single run for testing
+            state = load_state(config["state_file"])
+            run_check = getattr(monitor_single_repo, "run_check", None)
+            if callable(run_check):
+                run_check(state)
+            else:
+                logging.error("Single run mode not available")
+        else:
+            # Continuous monitoring
+            monitor_single_repo(config, lock)

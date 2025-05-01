@@ -1,5 +1,5 @@
 ---
-- name: Build and Package Exporter
+- name: Build and Package
   hosts: localhost
   connection: local
   gather_facts: yes
@@ -7,7 +7,7 @@
   vars:
     exporter: "{{ exporter_name | mandatory }}"
     version: "{{ version | mandatory }}"
-    git_ref: "{{ git_ref | default('HEAD') }}"
+    git_ref: "{{ git_ref }}"
     repo_url: "{{ repo_url | mandatory }}"
     build_root: "{{ build_root | default('/tmp/build') }}"
     staging_dir: "{{ staging_dir | default('/opt/staging') }}"

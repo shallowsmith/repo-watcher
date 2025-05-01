@@ -1,7 +1,7 @@
 ---
 # Building locations
-staging_dir: /opt/staging
-build_root: /tmp/build
+staging_dir: "/opt/staging"
+build_root: "/tmp/build"
 
 # Repository URLs
 dcgm_repo_url: https://github.com/NVIDIA/DCGM.git

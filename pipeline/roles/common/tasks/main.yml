@@ -5,7 +5,7 @@
     state: directory
     mode: '0755'
   loop:
-    - "{{ build_root }}"
+    - "{{ build_root | default('tmp/build') }}"
     - "{{ staging_dir }}"
 
 - name: Clean previous build artifacts
@@ -17,7 +17,7 @@
   git:
     repo: "{{ repo_url }}"
     dest: "{{ build_root }}/{{ exporter }}"
-    version: "{{ exporter_git_ref }}"
+    version: "{{ git_ref }}"
     force: yes
 
 - name: Ensure service user exists
