@@ -11,18 +11,18 @@
     cmd: |
       cd {{ build_root }}/{{ exporter }}
       make build
-    creates: "{{ build_root }}/{{ exporter }}/node_exporter"
+    creates: "{{ build_root }}/{{ exporter }}/node-exporter"
   environment:
     GOPATH: /root/go
     PATH: /usr/local/go/bin:{{ ansible_env.PATH }}
 
 - name: Copy binary to /usr/bin
   copy:
-    src: "{{ build_root }}/{{ exporter }}/node_exporter"
-    dest: "/usr/bin/node_exporter"
+    src: "{{ build_root }}/{{ exporter }}/node-exporter"
+    dest: "/usr/bin/node-exporter"
     mode: "0755"
     remote_src: yes
-
+    
 - name: Create systemd service file from template
   template:
     src: node-exporter.service.j2
