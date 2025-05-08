@@ -14,12 +14,6 @@ from pathlib import Path
 DEFAULT_CONFIG_PATH = "/opt/repo-watcher/configs/dcgm_exporter.json"
 LOCK_TIMEOUT = 600
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] [%(levelname)s] %(message)s',
-)
-
 def format_date(iso_str):
     try:
         dt = datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
@@ -40,8 +34,9 @@ def trigger_pipeline(event_type, value, repo_config, lock):
     """Trigger Ansible pipeline for a repository release or commit change."""
     repo_name = repo_config['repo'].lower()
     owner_name = repo_config['owner'].lower()
-    exporter_name = repo_name.replace('-', '_')
+    exporter_name = repo_name.replace('_', '-')
     owner_repo_name = f"{owner_name}/{repo_name}"
+
     
     print(f"[ACTION] Trigger: {event_type} detected - {value} ({owner_repo_name})")
     logging.info(f"[ACTION] Triggering pipeline for {event_type} in {owner_repo_name}: {value}")
@@ -104,12 +99,23 @@ def monitor_single_repo(config, lock):
     CHECK_INTERVAL = config["check_interval"]
     STATE_FILE = config["state_file"]
     LOG_FILE = config.get("log_file", "log/repo-watcher.log")
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     BRANCH = config.get("branch", "main")
 
     OWNER_REPO_NAME = f"{OWNER}/{REPO}"
     REPO_NAME = f"{REPO}"
     RELEASES_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
     COMMITS_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/commits?sha={BRANCH}&per_page=1"
+
+    for h in logging.root.handlers[:]:
+        logging.root.removeHandler(h)
+    
+    logging.basicConfig(
+        filename=LOG_FILE,
+        level=logging.INFO,
+        format='[%(asctime)s] [%(levelname)s] %(message)s',
+        filemode='a'
+    )
 
     # Ensure log path exists
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
