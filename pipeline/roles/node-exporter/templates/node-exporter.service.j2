@@ -9,11 +9,11 @@ User={{ service_user }}
 Group={{ service_group }}
 
 # Ensure proper file permissions for logs
-ExecStartPre=/bin/mkdir -p /var/log/{{ pkg_name }}
-ExecStartPre=/bin/chown {{ service_user }}:{{ service_group }} /var/log/{{ pkg_name }}
+ExecStartPre=/bin/mkdir -p /var/log/{{ exporter_name }}
+ExecStartPre=/bin/chown {{ service_user }}:{{ service_group }} /var/log/{{ exporter_name }}
 
 # Run the service with proper log redirection
-ExecStart=/usr/bin/node_exporter {% if service_args is defined %}{{ service_args }}{% endif %} \
+ExecStart=/usr/bin/node-exporter {% if service_args is defined %}{{ service_args }}{% endif %} \
           --log.level=info \
           --log.format=logger:stderr
 

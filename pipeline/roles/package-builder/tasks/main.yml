@@ -1,4 +1,7 @@
 ---
+- name: Debug variables
+  debug:
+    msg: "Building package for {{ pkg_name }} version {{ pkg_version }}, binary should be at /usr/bin/{{ pkg_name | replace('_', '-') }}"
 
 - name: Create package directory structure
   file:

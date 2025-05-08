@@ -6,19 +6,23 @@
       - build-essential
     state: present
 
+- name: Debug variables
+  debug:
+    msg: "build_root={{ build_root }} exporter={{ exporter }}"
+
 - name: Build node exporter
   shell:
     cmd: |
       cd {{ build_root }}/{{ exporter }}
       make build
-    creates: "{{ build_root }}/{{ exporter }}/node-exporter"
+    creates: "{{ build_root }}/{{ exporter }}/node_exporter"
   environment:
     GOPATH: /root/go
     PATH: /usr/local/go/bin:{{ ansible_env.PATH }}
 
 - name: Copy binary to /usr/bin
   copy:
-    src: "{{ build_root }}/{{ exporter }}/node-exporter"
+    src: "{{ build_root }}/{{ exporter }}/node_exporter"
     dest: "/usr/bin/node-exporter"
     mode: "0755"
     remote_src: yes

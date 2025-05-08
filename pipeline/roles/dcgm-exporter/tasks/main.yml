@@ -6,6 +6,10 @@
       - build-essential
     state: present
 
+- name: Debug variables
+  debug:
+    msg: "build_root={{ build_root }} exporter={{ exporter }}"
+
 - name: Build DCGM exporter
   shell:
     cmd: |

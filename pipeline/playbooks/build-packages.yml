@@ -26,7 +26,7 @@
 
     - name: Package as .deb
       include_role:
-        name: package_builder
+        name: package-builder
       vars:
         pkg_name: "{{ exporter }}"
         pkg_version: "{{ version }}"
