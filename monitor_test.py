@@ -107,15 +107,15 @@ def monitor_single_repo(config, lock):
     RELEASES_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
     COMMITS_URL = f"https://api.github.com/repos/{OWNER}/{REPO}/commits?sha={BRANCH}&per_page=1"
 
-    for h in logging.root.handlers[:]:
-        logging.root.removeHandler(h)
-    
-    logging.basicConfig(
-        filename=LOG_FILE,
-        level=logging.INFO,
-        format='[%(asctime)s] [%(levelname)s] %(message)s',
-        filemode='a'
-    )
+    logger = logging.getLogger(f"{OWNER}/{REPO}")
+    logger.setLevel(logging.INFO)
+
+    file_handler = logging.FileHandler(LOG_FILE)
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+    file_handler.setFormatter(formatter)
+
+    if not logger.handlers:
+        logger.addHandler(file_handler)
 
     # Ensure log path exists
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
@@ -138,9 +138,9 @@ def monitor_single_repo(config, lock):
             data = r.json()
             return data["tag_name"], data.get("published_at", "unknown")
         except requests.exceptions.HTTPError as e:
-            logging.error(f"[{OWNER_REPO_NAME}] GitHub API HTTP Error (release): {e}")
+            logger.error(f"[{OWNER_REPO_NAME}] GitHub API HTTP Error (release): {e}")
         except requests.exceptions.RequestException as e:
-            logging.error(f"[{OWNER_REPO_NAME}] GitHub API Request Exception (release): {e}")
+            logger.error(f"[{OWNER_REPO_NAME}] GitHub API Request Exception (release): {e}")
         return None, None
 
     def check_commit():
@@ -150,9 +150,9 @@ def monitor_single_repo(config, lock):
             data = r.json()[0]
             return data["sha"], data["commit"]["committer"]["date"]
         except requests.exceptions.HTTPError as e:
-            logging.error(f"[{OWNER_REPO_NAME}] GitHub API HTTP Error (commit): {e}")
+            logger.error(f"[{OWNER_REPO_NAME}] GitHub API HTTP Error (commit): {e}")
         except requests.exceptions.RequestException as e:
-            logging.error(f"[{OWNER_REPO_NAME}] GitHub API Request Exception (release): {e}")
+            logger.error(f"[{OWNER_REPO_NAME}] GitHub API Request Exception (release): {e}")
         return None, None
 
     def run_check(state):
@@ -161,14 +161,14 @@ def monitor_single_repo(config, lock):
             latest_commit, raw_commit_date = check_commit()
 
             if not latest_release or not latest_commit:
-                logging.warning(f"[{OWNER_REPO_NAME}] Skipping check cycle due to API error.")
+                logger.warning(f"[{OWNER_REPO_NAME}] Skipping check cycle due to API error.")
                 return
 
             release_date = format_date(raw_release_date)
             commit_date = format_date(raw_commit_date)
 
             if latest_release != state["latest_release"]:
-                logging.info(f"[{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
+                logger.info(f"[{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
                 print(f"[INFO] [{OWNER_REPO_NAME}] New release detected: {latest_release} (published: {release_date})")
                 is_successful = trigger_pipeline("release", latest_release, config, lock)
                 if is_successful:
@@ -177,7 +177,7 @@ def monitor_single_repo(config, lock):
                     save_state(state)
 
             elif latest_commit != state["latest_commit"]:
-                logging.info(f"[{OWNER_REPO_NAME}] New commit detected on {BRANCH}: {latest_commit} (date: {commit_date})")
+                logger.info(f"[{OWNER_REPO_NAME}] New commit detected on {BRANCH}: {latest_commit} (date: {commit_date})")
                 print(f"[INFO] [{OWNER_REPO_NAME}] New commit detected on {BRANCH}: {latest_commit} (date: {commit_date})")
                 is_successful = trigger_pipeline("commit", latest_commit, config, lock)
                 if is_successful:
@@ -189,13 +189,13 @@ def monitor_single_repo(config, lock):
                        f"Latest release: {state['latest_release']} (published: {release_date})\n"
                        f"Latest commit: {state['latest_commit']} (date: {commit_date})")
                 print(f"[{OWNER_REPO_NAME}]: {msg}")
-                logging.info(f"[{OWNER_REPO_NAME}]: {msg}")
+                logger.info(f"[{OWNER_REPO_NAME}]: {msg}")
 
         except Exception as e:
-            logging.error(f"[{OWNER_REPO_NAME}] Error occurred: {e}")
+            logger.error(f"[{OWNER_REPO_NAME}] Error occurred: {e}")
 
     state = load_state()
-    logging.info(f"[{OWNER_REPO_NAME}] Starting monitoring with check interval: {CHECK_INTERVAL}s")
+    logger.info(f"[{OWNER_REPO_NAME}] Starting monitoring with check interval: {CHECK_INTERVAL}s")
     
     while True:
         run_check(state)
