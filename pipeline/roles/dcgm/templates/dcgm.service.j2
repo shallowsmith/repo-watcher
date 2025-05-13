@@ -1,0 +1,13 @@
+[Unit]
+Description=NVIDIA Data Center GPU Manager
+Documentation=https://developer.nvidia.com/dcgm
+After=syslog.target network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nv-hostengine
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
