@@ -6,7 +6,7 @@ import threading
 import time
 import logging
 from pathlib import Path
-from monitor_test import monitor_single_repo
+from monitor import monitor_single_repo
 
 CONFIG_DIR = Path("configs")  
 DEFAULT_INTERVAL = 120 
@@ -20,14 +20,31 @@ def monitor_worker(config_path):
     owner = config["owner"]
     repo = config["repo"]
     repo_name = f"{owner}/{repo}"
-    sanitized_repo = repo.replace('/', '_').replace('-', '_')
     
-    log_file_path = f"log/{sanitized_repo}.log"
-    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
-    config["log_file"] = log_file_path  
+    sanitized_repo = repo.replace('-', '_').replace('/', '_').lower()
+    
+    log_dir = "/opt/repo-watcher/log"
+    os.makedirs(log_dir, exist_ok=True)
+    
+    log_file_path = os.path.join(log_dir, f"{sanitized_repo}.log")
+    config["log_file"] = log_file_path
+    
+    logger = logging.getLogger(repo_name)
+    logger.setLevel(logging.INFO)
+    
+    file_handler = logging.FileHandler(log_file_path)
+    formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+    file_handler.setFormatter(formatter)
+    
+    if logger.handlers:
+        logger.handlers.clear()
+    
+    logger.addHandler(file_handler)
 
-    print(f"[Thread] [{repo_name}] Starting watcher for {repo_name} (every {config.get('check_interval', DEFAULT_INTERVAL)}s)")
-
+    startup_msg = f"Starting watcher for {repo_name} (check interval: {config.get('check_interval', DEFAULT_INTERVAL)}s)"
+    print(f"[Thread] [{repo_name}] {startup_msg}")
+    logger.info(f"[Thread] [{repo_name}] {startup_msg}")
+    
     monitor_single_repo(config, lock)
 
 def main():
