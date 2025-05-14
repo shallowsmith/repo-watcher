@@ -50,6 +50,9 @@ def trigger_pipeline(event_type, value, repo_config, lock):
     if event_type == "release":
         version = f"{value.strip('v')}-{time.strftime('%Y%m%d')}"
         git_ref = value
+    elif event_type == "tag":
+        version = f"{value.strip('v')}-{time.strftime('%Y%m%d')}"
+        git_ref = value
     elif event_type == "commit":
         short_sha = value[:7]
         version = f"commit-{short_sha}-{time.strftime('%Y%m%d')}"
