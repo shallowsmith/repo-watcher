@@ -80,11 +80,6 @@
   register: download_result
   when: dcgm_install is success or dcgm_install is succeeded
 
-- name: Debug download result
-  debug:
-    var: download_result
-  when: dcgm_install is success or dcgm_install is succeeded
-
 - name: Create systemd service file from template
   template:
     src: dcgm.service.j2
