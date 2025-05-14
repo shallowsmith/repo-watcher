@@ -1,5 +1,5 @@
 Package: {{ pkg_name }}
-Version: {{ pkg_version }}
+Version: {{ pkg_version | regex_replace('^([^0-9].*)', '1.0.0') }} 
 Section: monitoring
 Priority: optional
 Architecture: amd64
