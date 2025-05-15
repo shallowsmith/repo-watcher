@@ -25,5 +25,4 @@
     name: "{{ service_user }}"
     system: yes
     create_home: no
-    shell: /sbin/nologin
     state: present
