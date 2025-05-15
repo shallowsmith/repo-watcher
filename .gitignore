@@ -4,14 +4,18 @@ __pycache__/
 *.pyo
 *.pyd
 *.log
+github_config.py
 
 # Virtualenv
 venv/
 env/
+backdate-commit.sh
 
 # Ansible artifacts
 *.retry
 *.ansible_runner/
+pipeline/project/test.yml
+pipeline/artifacts
 
 # System files
 .DS_Store
@@ -23,3 +27,6 @@ Thumbs.db
 
 # staging directory
 opt/staging/
+
+# State files
+state/

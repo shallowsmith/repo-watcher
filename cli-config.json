@@ -1,5 +1,5 @@
 {
     "staging_dir": "/opt/staging",
-    "repo_dir": "/opt/published",
+    "repo_dir": "/var/www/html/airepo-dev/pool",
     "log_file": "/opt/repo-watcher/log/repoctl.log"
 }

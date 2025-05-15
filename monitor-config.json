@@ -1,7 +1,0 @@
-{
-    "owner": "NVIDIA",
-    "repo": "dcgm-exporter",
-    "check_interval": 30,
-    "state_file": "/opt/repo-watcher/repo_state.json",
-    "log_file": "./log/monitor.log"
-}

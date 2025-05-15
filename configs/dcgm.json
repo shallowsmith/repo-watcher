@@ -1,0 +1,9 @@
+{
+    "owner": "NVIDIA",
+    "repo": "DCGM",
+    "check_interval": 120,
+    "state_file": "/opt/repo-watcher/state/DCGM_state.json",
+    "log_file": "/opt/repo-watcher/log/DCGM.log",
+    "branch": "master",
+    "repo_url": "https://github.com/NVIDIA/DCGM"
+}

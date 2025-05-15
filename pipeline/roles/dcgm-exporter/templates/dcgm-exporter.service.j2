@@ -1,0 +1,19 @@
+[Unit]
+Description=NVIDIA DCGM Exporter
+Documentation=https://github.com/NVIDIA/dcgm-exporter
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/dcgm-exporter {% if service_args is defined %}{{ service_args }}{% endif %}
+
+{% if service_user is defined %}
+User={{ service_user }}
+Group={{ service_group | default(service_user) }}
+{% endif %}
+
+Restart=on-failure
+RestartSec=15
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

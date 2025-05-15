@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+# Reload systemd configuration
+systemctl daemon-reload
+
+# Enable the service but don't start it
+systemctl enable {{ pkg_name | replace('_', '-') }}
+
+# Create log and configuration directories if they don't exist
+mkdir -p /var/log/{{ pkg_name }}
+mkdir -p /etc/{{ pkg_name | replace('_', '-') }}
+
+# Set proper permissions
+chown -R {{ service_user }}:{{ service_group }} /var/log/{{ pkg_name }}
+chown -R {{ service_user }}:{{ service_group }} /etc/{{ pkg_name | replace('_', '-') }}
+
+{% if post_install_commands is defined %}
+# Custom post-install commands
+{% for cmd in post_install_commands %}
+{{ cmd }}
+{% endfor %}
+{% endif %}
+
+echo "Package {{ pkg_name }} installed successfully. Service is enabled but not started."
+echo "To start the service, run: sudo systemctl start {{ pkg_name | replace('_', '-') }}"
+
+exit 0

@@ -1,0 +1,30 @@
+[Unit]
+Description=Prometheus Node Exporter
+Documentation=https://github.com/prometheus/node_exporter
+After=network.target
+
+[Service]
+# Use the existing user
+User={{ service_user }}
+Group={{ service_group }}
+
+# Ensure proper file permissions for logs
+ExecStartPre=/bin/mkdir -p /var/log/{{ exporter_name }}
+ExecStartPre=/bin/chown {{ service_user }}:{{ service_group }} /var/log/{{ exporter_name }}
+
+# Run the service with proper log redirection
+ExecStart=/usr/bin/node-exporter {% if service_args is defined %}{{ service_args }}{% endif %} \
+          --log.level=info \
+          --log.format=logger:stderr
+
+# Use systemd journal for logging
+StandardOutput=journal
+StandardError=journal
+
+# Restart policy
+Restart=on-failure
+RestartSec=15
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

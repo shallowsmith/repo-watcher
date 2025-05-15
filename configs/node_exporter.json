@@ -1,0 +1,9 @@
+{
+    "owner": "prometheus",
+    "repo": "node_exporter",
+    "check_interval": 120,
+    "state_file": "/opt/repo-watcher/state/node_exporter_state.json",
+    "log_file": "/opt/repo-watcher/log/node_exporter.log",
+    "branch": "master",
+    "repo_url": "https://github.com/prometheus/node_exporter/"
+}

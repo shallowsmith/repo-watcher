@@ -1,0 +1,61 @@
+---
+- name: Build and Package {{ pkg_name }} into deb 
+  hosts: local
+  gather_facts: false
+  vars:
+    repo_dest: "{{ build_root }}/{{ pkg_name }}"
+    package_out: "{{ staging_dir }}/{{ pkg_name }}_{{ pkg_version }}.deb"
+  
+  tasks:
+    - name: Ensure staging directory exists
+      file: 
+        path: "{{ staging_dir }}"
+        state: directory
+        mode: '0755'
+    
+    - name: Delete old build tree
+      file:
+        path: "{{ build_root }}/{{ pkg_name }}-*"
+        state: absent
+      ignore_errors: true
+    
+    - name: Ensure temp building directory exists
+      file:
+        path: "{{ build_root }}"
+        state: directory
+        mode: '0755'
+    
+    - name: Clone {{ pkg_name }} source
+      git:
+        repo: "{{ git_url }}"
+        dest: "{{ repo_dest }}"
+        force: yes
+    
+    - name: copy build.sh into repo if none provided
+      copy:
+        src: "../roles/deb_packager/files/build.sh"
+        dest: "{{ repo_dest }}/build.sh"
+        mode: '0755'
+      when: not repo_build.sh.stat.exists
+
+    - name: Ensure build.sh is executable
+      file: 
+        path: "{{ repo_dest }}/build.sh"
+        mode: '0755'
+
+    - name: Run build.sh to produce .deb
+      command: ./build.sh
+      args:
+        chdir: "{{ repo_dest }}"
+      environment:
+        VERSION:     "{{ pkg_version }}"
+        PKG_NAME:    "{{ pkg_name }}"
+        BUILD_ROOT:  "{{ build_root }}"
+        STAGING_DIR: "{{ staging_dir }}"
+
+    - name: Show me what got built
+      debug:
+        msg: "Built {{ staging_dir }}/{{ pkg_name }}_{{ pkg_version }}.deb"
+
+
+     

@@ -1,0 +1,37 @@
+---
+- name: Install DCGM exporter dependencies
+  apt:
+    name:
+      - golang-go
+      - build-essential
+    state: present
+
+- name: Debug variables
+  debug:
+    msg: "build_root={{ build_root }} exporter={{ exporter }}"
+
+- name: Build DCGM exporter
+  shell:
+    cmd: |
+      cd {{ build_root }}/{{ exporter }}
+      make
+      make install
+    creates: /usr/bin/dcgm-exporter
+  environment:
+    GOPATH: /root/go
+    PATH: /usr/local/go/bin:{{ ansible_env.PATH }}
+
+- name: Copy default counters CSV
+  copy:
+    src: "{{ build_root }}/{{ exporter }}/etc/default-counters.csv"
+    dest: "/etc/dcgm-exporter/default-counters.csv"
+    mode: "0644"
+    directory_mode: yes
+
+- name: Create systemd service file from template
+  template:
+    src: dcgm-exporter.service.j2
+    dest: "{{ build_root }}/{{ exporter }}/dcgm-exporter.service"
+    mode: "0644"
+  vars:
+    service_args: "--collector-config=/etc/dcgm-exporter/default-counters.csv"
