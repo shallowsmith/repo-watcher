@@ -130,23 +130,22 @@ python3 cli/repoctl.py reset
 - [x] Integrate Ansible Runner or subprocess trigger to call automation pipeline
 - [x] Deploy watcher service on lab VM
 - [x] Multithreading support for multiple repos
-- [ ] Implement logic to watch specific releases and commits. 
+- [x] Implement logic to watch specific releases and commits. 
 
 ### Ansible Build Pipeline
 - [x] Finalize playbook to clone repo, build, and package
 - [x] Separate between commit and release builds
 - [x] Implement dynamic version tagging for `.deb` files
 - [x] Make config path configurable via CLI flag
-- [ ] Major refactor to follow the [Good Practices for Ansible](https://redhat-cop.github.io/automation-good-practices/)
-- [ ] Write proper ansible playbook for correct automation (check dependencies)
+- [x] Major refactor to follow the [Good Practices for Ansible](https://redhat-cop.github.io/automation-good-practices/)
+- [x] Write proper ansible playbook for correct automation (check dependencies)
 
 ### Repo Flow
 - [x] Define staging directory for review
 - [x] Build CLI tool (repoctl.py)
 - [x] Add a dry run flag to simulate actions without making changes
 - [x] Integrate testing framework using GitHub Actions
-- [ ] Push `.deb` to APT repo, validate on target machines
-- [ ] Package monitor.py as systemd-managed service
+- [x] Push `.deb` to APT repo, validate on target machines
 
 ## Logging
 - `monitor.py`: Logs release/commit checks, errors, and pipeline triggers to `monitor.log`
