@@ -1,4 +1,4 @@
-# repo-watcher ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)![Ansible](https://img.shields.io/badge/Ansible-000000?style=for-the-badge&logo=ansible&logoColor=white)![Jinja](https://img.shields.io/badge/Jinja2-B41717?style=for-the-badge&logo=jinja&logoColor=white)
+# repo-watcher [![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/) [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://docs.python.org/3.11/)[![Ansible](https://img.shields.io/badge/Ansible-000000?style=for-the-badge&logo=ansible&logoColor=white)](https://docs.ansible.com/)[![Jinja](https://img.shields.io/badge/Jinja2-B41717?style=for-the-badge&logo=jinja&logoColor=white)](https://jinja.palletsprojects.com/)
 
 <p align="center">
 <img src="./public/stninc.png" alt="stninc" width="200"> <br/>
@@ -12,7 +12,7 @@ This project contains two components: `monitor.py` and `repoctl.py`, working tog
 - `repoctl.py`: A CLI tool to review staged `.deb` packages, view metadata, check promotion status, and promote packages to the published APT repo.
 
 ## Getting Started
-### Prerequisities
+### Prerequisites
 - Ubuntu 20.04
 - Python 3.11+ (built on Python 3.11)
 
@@ -210,7 +210,7 @@ pipeline/
 
 2. Common: The `common` role prepares the build enviornment, cloning the repository and ensuring directories exist. 
 
-3. Role Based Build: Depending on the target software, the appropriate role is invoked to build the software. 
+3. Role-Based Build: Depending on the target software, the appropriate role is invoked to build the software. 
 
 4. Packaging: The `package-builder` role packages the built binary into a `.deb` package with:
     - `DEBIAN/control` file with dependency information
