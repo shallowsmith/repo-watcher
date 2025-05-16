@@ -1,7 +1,6 @@
 # repo-watcher
-<div style="text-align: center;">
-<img src="./public/stninc.png" alt="stninc" style="max-width: 60%;max-height: 60%;"> <br/>
-</div>
+<img src="./public/stninc.png" alt="stninc" width="200"> <br/>
+
 ## Overview
 This project contains two components: `monitor.py` and `repoctl.py`, working together to monitor an upstream GitHub repository, automatically build and stage `.deb` packages, and allow for manual promotion to an internal APT repository.
 
