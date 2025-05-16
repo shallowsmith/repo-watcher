@@ -1,4 +1,5 @@
-# repo-watcher
+# repo-watcher ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)![Ansible](https://img.shields.io/badge/Ansible-000000?style=for-the-badge&logo=ansible&logoColor=white)![Jinja](https://img.shields.io/badge/Jinja2-B41717?style=for-the-badge&logo=jinja&logoColor=white)
+
 <p align="center">
 <img src="./public/stninc.png" alt="stninc" width="200"> <br/>
 </p>
