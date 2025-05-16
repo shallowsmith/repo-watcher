@@ -1,7 +1,11 @@
 # repo-watcher
+<div style="text-align: center;">
+<img src="./public/stninc.png" alt="stninc" style="max-width: 60%;max-height: 60%;"> <br/>
+</div>
 ## Overview
 This project contains two components: `monitor.py` and `repoctl.py`, working together to monitor an upstream GitHub repository, automatically build and stage `.deb` packages, and allow for manual promotion to an internal APT repository.
 
+- `multi_monitor.py`: This is the entry point of the project that is an extension to the `monitor.py` allowing multi-repo support utilizing multi-threading.
 - `monitor.py`: A Python-based systemd-compatible watcher service that monitors an upstream GitHub repository for new releases and commits to the main branch. It triggers an Ansible pipeline to build, package, and stage the binaries.
 - `repoctl.py`: A CLI tool to review staged `.deb` packages, view metadata, check promotion status, and promote packages to the published APT repo.
 
@@ -11,10 +15,10 @@ This project contains two components: `monitor.py` and `repoctl.py`, working tog
 - Python 3.11+ (built on Python 3.11)
 
 ### Installation
-Clone the Repo: <br/>
+1. Clone the Repo: <br/>
 `git clone https://github.com/shallowsmith/repo-watcher.git`
 
-Create, activate a virtual environment and install the required packages:
+2. Create, activate a virtual environment and install the required packages:
 
 ```bash
 python3 -m venv venv
@@ -22,47 +26,77 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## GitHub Watcher Service: monitor.py  
+3. Create the necessary directories:
+```bash
+sudo mkdir -p /opt/staging /opt/published /opt/repo-watcher/log /opt/repo-watcher/state
+sudo chmod 755 /opt/staging /opt/published /opt/repo-watcher/log /opt/repo-watcher/state
+```
 
-`monitor.py` periodically queries the GitHub API for:
-- The latest release tag
-- The latest commit SHA on the `main` branch
+4. Copy the configuration files to the configs directory:
+```bash
+sudo mkdir -p /opt/repo-watcher/configs
+sudo cp *.json /opt/repo-watcher/configs/
+```
 
-If a new release or commit is detected:
-- It triggers an Ansible Runner pipeline to build and stage a `.deb` package
-- Saves state in a JSON file to avoid repeated builds
-- Logs all actions and errors for traceability
-
-### Example `config.json`
+- A sample configuration file looks like:
 ```json
 {
   "owner": "NVIDIA",
   "repo": "dcgm-exporter",
-  "check_interval": 1800,
-  "state_file": "/opt/repo-watcher/repo_state.json",
-  "log_file": "/opt/repo-watcher/log/monitor.log"
+  "check_interval": 120,
+  "state_file": "/opt/repo-watcher/state/dcgm_exporter_state.json",
+  "log_file": "/opt/repo-watcher/log/dcgm_exporter.log",
+  "branch": "main",
+  "repo_url": "https://github.com/NVIDIA/dcgm-exporter"
 }
 ```
+## Multi-Repository Monitoring: `multi_monitor.py`
+The `multi_monitor.py` script allows monitoring multiple repositories simultaneously. It reads all JSON configuration files from the `/opt/repo-watcher/configs/` directory and creates a separate thread for each repository.
+
+To run:
+```bash
+python3 multi_monitor.py
+```
+- This is the recommended entry point for this project instead of `monitor.py`.
+
+## GitHub Watcher Service: `monitor.py`  
+
+`monitor.py` periodically queries the GitHub API for:
+- The latest release tag or tag
+- The latest commit SHA on the configured branch
+
+If a new release, tag, or commit is detected:
+- It triggers an Ansible pipeline to build and stage a `.deb` package
+- Saves state in a JSON file to avoid repeated builds
+- Logs all actions and errors for traceability
 
 ### Running monitor.py
 ```bash
-python3 monitor.py  # uses deafult config
-# or
+# Run with default config
+python3 monitor.py
+
+# Run with specific config file
 python3 monitor.py --config /path/to/config.json
-# or 
-python3 monitor.py --once # runs the program once
+
+# Run once and exit (useful for testing)
+python3 monitor.py --once
+
+# Reset state and log files
+python3 monitor.py --reset
 ```
 
 
-## CLI Tool: repoctl.py
+## CLI Tool: `repoctl.py`
 
-`repoctl.py` is a lightweight CLI utility for interacting with staged `.deb` packages. It supports both subcommand-style and flag-based invocation.
+`repoctl.py` is a CLI tool for interacting with staged `.deb` packages. It supports both subcommand-style and flag-based invocation.
 
-### Example `cli-config.json`
+### Configuration
+The CLI tool uses a configuration file located at the project root `cli-config.json`:
+
 ```json
 {
   "staging_dir": "/opt/staging",
-  "repo_dir": "/opt/published",  // To be changed later
+  "repo_dir": "/opt/published", 
   "log_file": "/opt/repo-watcher/log/repoctl.log"
 }
 ```
@@ -101,7 +135,7 @@ python3 cli/repoctl.py -p <package.deb>
 python3 cli/repoctl.py publish <package.deb> --check
 ```
 
-### Remove a package
+#### Remove a package
 ```bash
 # Remove from staging (default)
 python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb
@@ -115,12 +149,88 @@ python3 cli/repoctl.py remove dcgm-exporter_1.0.0.deb --check
 
 #### Reset repo state and log files
 ```bash
-python3 tools/repo_state.py
+python3 tools/reset_state.py
 #or
 python3 monitor.py reset
-#or
-python3 cli/repoctl.py reset
 ```
+
+## Ansible Pipeline
+
+The project includes an Ansible-based pipeline that handles: 
+
+1. Cloning the target repository
+2. Building the software from source
+3. Packaging it as a `.deb` file with proper metadata
+4. Staging the package for review
+
+### Pipeline Structure Details
+#### Directory Structure
+```
+pipeline/
+├── ansible.cfg                  # Ansible configuration
+├── inventory/                   # Host definitions
+│   ├── group_vars/
+│   │   └── all.yml             # Common variables shared across playbooks
+│   └── hosts                    # Inventory file (primarily localhost)
+├── playbooks/                   # Orchestration playbooks
+│   ├── build-packages.yml       # Main build process coordinator
+│   ├── setup-dependencies.yml   # Installs system dependencies
+│   └── test.yml                 # Test playbook
+└── roles/                       # Modular components for specific tasks
+    ├── common/                  # Shared tasks for all build processes
+    │   └── tasks/
+    │       └── main.yml         # Common build preparation tasks
+    ├── dcgm/                    # NVIDIA DCGM specific build logic
+    │   ├── tasks/
+    │   │   └── main.yml         # DCGM build and package tasks
+    │   └── templates/
+    │       └── dcgm.service.j2  # DCGM service template
+    ├── dcgm-exporter/           # NVIDIA DCGM Exporter specific build logic
+    │   ├── tasks/
+    │   │   └── main.yml         # DCGM Exporter build tasks
+    │   └── templates/
+    │       └── dcgm-exporter.service.j2  # Service template
+    ├── node-exporter/           # Prometheus Node Exporter build logic
+    │   ├── tasks/
+    │   │   └── main.yml         # Node Exporter build tasks
+    │   └── templates/
+    │       └── node-exporter.service.j2  # Service template
+    └── package-builder/         # Creates Debian packages
+        ├── tasks/
+        │   └── main.yml         # Packaging tasks
+        └── templates/
+            ├── control.j2       # Package control file template
+            └── postinst.j2      # Post-installation script template
+```
+
+#### Execution Flow
+1. Initialization: The main playbook `build-packages.yml` is triggered by `monitor.py` when a new release or commit is detected.
+
+2. Common: The `common` role prepares the build enviornment, cloning the repository and ensuring directories exist. 
+
+3. Role Based Build: Depending on the target software, the appropriate role is invoked to build the software. 
+
+4. Packaging: The `package-builder` role packages the built binary into a `.deb` package with:
+    - `DEBIAN/control` file with dependency information
+    - Post-installation scripts for service startup
+    - Systemd unit files for running service
+
+## Scale the Project
+To add support for a new type of repository:
+1. Create a new configuration file in `/opt/repo-watcher/configs/`
+2. Add a corresponding role in `/pipeline/roles/`
+3. Implement the build logic specific to that repository
+4. Reuse the common packaging infrastructure
+
+## Logging
+- `monitor.py`: Logs release/commit checks, errors, and pipeline triggers to configured log files
+- `cli/repoctl.py`: Logs CLI actions like listing, publishing, metadata inspection to `/log/repoctl.log`
+
+## Flowchart:
+<img src="./public/flowchart.svg" alt="Mermaid Chart" style="max-width: 90%;">
+
+### Notes:
+Designed for internal use.
 
 ## TODO
 
@@ -146,26 +256,3 @@ python3 cli/repoctl.py reset
 - [x] Add a dry run flag to simulate actions without making changes
 - [x] Integrate testing framework using GitHub Actions
 - [x] Push `.deb` to APT repo, validate on target machines
-
-## Logging
-- `monitor.py`: Logs release/commit checks, errors, and pipeline triggers to `monitor.log`
-- `repoctl.py`: Logs CLI actions like listing, publishing, metadata inspection to `repoctl.log`
-
-### Testing on local environment:
-- Navigate to /test
-
-### Notes:
-Designed for internal use.
-
-## Flowchart:
-<img src="./public/flowchart.svg" alt="Mermaid Chart" style="max-width: 20%;">
-
-#### NOTES for self:
-- Create the exec, create that file as a service definition instead. 
-- .deb should be with the service definition.
-- .deb should be started and run the service.
-- multiple packages and repo support.  
-- package controls itself
-- find the concept of depedencies 
-
-- update the depricated flags and subcommands for monitor.py and also the logic for reset_state.py. 
